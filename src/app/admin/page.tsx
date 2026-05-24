@@ -14,6 +14,7 @@ interface Purchase {
   receipt_url: string;
   quantity: number;
   payment_status: string;
+  attendee_names: string;
   promoter?: Promoter | null;
   createdAt: string;
 }
@@ -27,7 +28,6 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [selectedReceipt, setSelectedReceipt] = useState<string | null>(null);
 
-  // Load password from localStorage if exists
   useEffect(() => {
     const savedPassword = localStorage.getItem('kermingo_admin_pass');
     if (savedPassword) {
@@ -81,7 +81,6 @@ export default function AdminDashboard() {
         alert(data.warning);
       }
 
-      // Remove from list
       setPurchases((prev) => prev.filter((p) => p.id !== purchaseId));
     } catch (err: any) {
       setError(err.message || 'Error al procesar la acción.');
@@ -196,17 +195,36 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Details */}
-                <div className="p-4 flex-1 space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 text-sm">Entradas:</span>
-                    <span className="font-bold text-slate-800">{purchase.quantity}</span>
+                <div className="p-4 flex-1 space-y-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500">Cantidad:</span>
+                    <span className="font-bold text-slate-800">{purchase.quantity} {purchase.quantity === 1 ? 'entrada' : 'entradas'}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 text-sm">Total pagado:</span>
+                  
+                  {/* Attendee list */}
+                  <div className="rounded-xl bg-slate-50 p-3 text-xs border border-slate-100">
+                    <span className="text-slate-500 font-bold block mb-1.5">Titulares de las Entradas:</span>
+                    <ol className="list-decimal list-inside space-y-1 text-slate-700 capitalize font-medium">
+                      {(() => {
+                        try {
+                          const names = JSON.parse(purchase.attendee_names);
+                          return names.map((name: string, i: number) => (
+                            <li key={i} className="truncate">{name}</li>
+                          ));
+                        } catch {
+                          return <li>No especificado</li>;
+                        }
+                      })()}
+                    </ol>
+                  </div>
+
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500">Total pagado:</span>
                     <span className="font-extrabold text-[#D4AF37]">
                       ${(purchase.quantity * 5500).toLocaleString('es-AR')}
                     </span>
                   </div>
+
                   {purchase.promoter && (
                     <div className="flex justify-between rounded-lg bg-[#74ACDF]/10 p-2 text-xs">
                       <span className="text-slate-600">Referido:</span>

@@ -11,6 +11,7 @@ interface ScanResult {
   success: boolean;
   data?: {
     buyerEmail: string;
+    holderName: string;
     ticketId: string;
     entryDate: string;
   };
@@ -71,6 +72,12 @@ export default function EscanerPage() {
                 </p>
 
                 <div className="rounded-2xl bg-black/40 p-5 text-left border border-emerald-500/20 space-y-3 mb-8">
+                  <div>
+                    <span className="text-xs text-slate-400 block font-semibold">Titular del Ticket:</span>
+                    <span className="font-extrabold text-lg text-emerald-300 capitalize">
+                      {scanResult.data?.holderName}
+                    </span>
+                  </div>
                   <div>
                     <span className="text-xs text-slate-400 block font-semibold">Comprador:</span>
                     <span className="font-bold text-sm break-all text-white">

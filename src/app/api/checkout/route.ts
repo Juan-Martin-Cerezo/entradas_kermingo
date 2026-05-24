@@ -10,8 +10,9 @@ export async function POST(req: Request) {
     const quantityStr = formData.get('quantity') as string;
     const referralCode = formData.get('referralCode') as string | null;
     const receiptFile = formData.get('receipt') as File | null;
+    const attendeeNamesStr = formData.get('attendeeNames') as string; // JSON array of names
 
-    if (!email || !quantityStr || !receiptFile) {
+    if (!email || !quantityStr || !receiptFile || !attendeeNamesStr) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -20,14 +21,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid quantity' }, { status: 400 });
     }
 
-    // Find promoter if referral code is provided
+    let attendeeNames: string[] = [];
+    try {
+      attendeeNames = JSON.parse(attendeeNamesStr);
+      if (!Array.isArray(attendeeNames) || attendeeNames.length !== quantity) {
+        return NextResponse.json({ error: 'Attendee names count must match quantity' }, { status: 400 });
+      }
+    } catch {
+      return NextResponse.json({ error: 'Invalid attendee names format' }, { status: 400 });
+    }
+
+    // Dynamic promoter creation or association
     let promoterId: string | null = null;
     if (referralCode && referralCode.trim() !== '') {
-      const promoter = await db.promoter.findUnique({
-        where: { referral_code: referralCode.trim() },
+      const code = referralCode.trim().toUpperCase();
+      let promoter = await db.promoter.findUnique({
+        where: { referral_code: code },
       });
+
+      // If promoter does not exist, create dynamically on the fly
       if (!promoter) {
-        return NextResponse.json({ error: 'Referral code not found' }, { status: 400 });
+        promoter = await db.promoter.create({
+          data: {
+            name: code, // Set name equal to code for dynamic identification
+            referral_code: code,
+          },
+        });
       }
       promoterId = promoter.id;
     }
@@ -53,6 +72,7 @@ export async function POST(req: Request) {
         receipt_url: receiptUrl,
         payment_status: 'PENDING',
         promoter_id: promoterId,
+        attendee_names: JSON.stringify(attendeeNames),
       },
     });
 

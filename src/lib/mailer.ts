@@ -12,6 +12,7 @@ const transporter = nodemailer.createTransport({
 interface TicketInfo {
   id: string;
   qrDataUrl: string;
+  holderName: string;
 }
 
 export async function sendTicketsEmail(buyerEmail: string, tickets: TicketInfo[]) {
@@ -22,7 +23,10 @@ export async function sendTicketsEmail(buyerEmail: string, tickets: TicketInfo[]
       (ticket, index) => `
     <div style="border: 3px solid #74ACDF; background-color: #ffffff; padding: 20px; margin: 15px 0; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
       <h3 style="color: #74ACDF; margin-top: 0; font-family: sans-serif; font-size: 1.2rem;">🇦🇷 ENTRADA KERMINGO 2026 🇦🇷</h3>
-      <p style="font-size: 1.1rem; font-weight: bold; margin: 5px 0; font-family: sans-serif;">Ticket #${index + 1}</p>
+      <p style="font-size: 1.1rem; font-weight: bold; margin: 5px 0; font-family: sans-serif; color: #333333;">
+        Titular: <span style="color: #D4AF37;">${ticket.holderName}</span>
+      </p>
+      <p style="font-size: 0.9rem; margin: 2px 0; font-family: sans-serif; color: #666666;">Ticket #${index + 1} de ${tickets.length}</p>
       <div style="margin: 15px 0;">
         <img src="cid:qr-${ticket.id}" alt="QR Code Ticket #${index + 1}" style="width: 200px; height: 200px; border: 4px solid #D4AF37; border-radius: 8px;" />
       </div>
@@ -57,7 +61,7 @@ export async function sendTicketsEmail(buyerEmail: string, tickets: TicketInfo[]
           <div style="padding: 30px 20px;">
             <h2 style="color: #333333; font-family: sans-serif; margin-top: 0;">¡Hola de parte de la organización!</h2>
             <p style="font-size: 1rem; line-height: 1.5; color: #555555; font-family: sans-serif;">
-              Tu transferencia ha sido verificada y tus entradas han sido emitidas con éxito. A continuación, encontrarás tus códigos QR para el ingreso al evento.
+              Tu transferencia ha sido verificada y tus entradas han sido emitidas con éxito. A continuación, encontrarás tus códigos QR correspondientes a cada titular.
             </p>
             
             <div style="margin: 20px 0;">
@@ -65,7 +69,7 @@ export async function sendTicketsEmail(buyerEmail: string, tickets: TicketInfo[]
             </div>
             
             <p style="font-size: 0.9rem; line-height: 1.4; color: #666666; font-family: sans-serif; text-align: center; border-top: 1px solid #eeeeee; padding-top: 20px; margin-top: 30px;">
-              ⚠️ <strong>Importante:</strong> Presentá estos códigos QR en la puerta desde tu celular para registrar tu entrada. Cada QR es de un único uso.
+              ⚠️ <strong>Importante:</strong> Presentá estos códigos QR en la puerta desde tu celular para registrar el ingreso. Cada QR es de un único uso y está asociado a su titular.
             </p>
           </div>
           

@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 
 export default function CheckoutPage() {
   const [email, setEmail] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [names, setNames] = useState<string[]>(['']);
   const [referralCode, setReferralCode] = useState('');
   const [receipt, setReceipt] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -15,10 +15,38 @@ export default function CheckoutPage() {
   const pricePerTicket = 5500;
   const totalPrice = quantity * pricePerTicket;
 
+  const handleQuantityChange = (newQty: number) => {
+    setQuantity(newQty);
+    setNames((prev) => {
+      const updated = [...prev];
+      if (newQty > prev.length) {
+        for (let i = prev.length; i < newQty; i++) {
+          updated.push('');
+        }
+      } else {
+        return updated.slice(0, newQty);
+      }
+      return updated;
+    });
+  };
+
+  const handleNameChange = (index: number, val: string) => {
+    setNames((prev) => {
+      const updated = [...prev];
+      updated[index] = val;
+      return updated;
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !receipt) {
       setError('Por favor completa todos los campos obligatorios.');
+      return;
+    }
+
+    if (names.some((n) => !n.trim())) {
+      setError('Por favor ingresa los nombres de todos los asistentes.');
       return;
     }
 
@@ -31,6 +59,7 @@ export default function CheckoutPage() {
       formData.append('quantity', quantity.toString());
       formData.append('referralCode', referralCode);
       formData.append('receipt', receipt);
+      formData.append('attendeeNames', JSON.stringify(names.map((n) => n.trim())));
 
       const res = await fetch('/api/checkout', {
         method: 'POST',
@@ -64,13 +93,22 @@ export default function CheckoutPage() {
           <div className="rounded-xl bg-[#74ACDF]/10 p-4 border border-[#74ACDF]/30 mb-6 text-left">
             <h4 className="font-semibold text-slate-800 mb-1">Resumen del Pedido:</h4>
             <p className="text-sm text-slate-600">Cantidad: {quantity} {quantity === 1 ? 'entrada' : 'entradas'}</p>
-            <p className="text-sm text-slate-600 font-bold">Total Transferido: ${totalPrice.toLocaleString('es-AR')}</p>
+            <div className="text-sm text-slate-600 mt-2">
+              <strong>Asistentes:</strong>
+              <ul className="list-disc list-inside mt-1 space-y-0.5 text-xs text-slate-500">
+                {names.map((n, i) => (
+                  <li key={i} className="capitalize">{n}</li>
+                ))}
+              </ul>
+            </div>
+            <p className="text-sm text-slate-600 font-bold mt-3">Total Transferido: ${totalPrice.toLocaleString('es-AR')}</p>
           </div>
           <button
             onClick={() => {
               setSuccess(false);
               setEmail('');
-              setQuantity(1);
+              handleQuantityChange(1);
+              setNames(['']);
               setReferralCode('');
               setReceipt(null);
             }}
@@ -148,7 +186,7 @@ export default function CheckoutPage() {
               <div className="mt-2 flex items-center gap-4">
                 <button
                   type="button"
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  onClick={() => handleQuantityChange(Math.max(1, quantity - 1))}
                   className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-lg font-bold text-slate-600 transition hover:bg-slate-200"
                 >
                   -
@@ -156,7 +194,7 @@ export default function CheckoutPage() {
                 <span className="text-xl font-bold text-slate-800 w-8 text-center">{quantity}</span>
                 <button
                   type="button"
-                  onClick={() => setQuantity((q) => q + 1)}
+                  onClick={() => handleQuantityChange(quantity + 1)}
                   className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-lg font-bold text-slate-600 transition hover:bg-slate-200"
                 >
                   +
@@ -170,10 +208,30 @@ export default function CheckoutPage() {
               </div>
             </div>
 
+            {/* Attendee Names */}
+            <div className="space-y-4 rounded-2xl bg-slate-50 p-4 border border-slate-200">
+              <label className="block text-sm font-bold text-slate-700">
+                Nombres de los Asistentes <span className="text-red-500">*</span>
+              </label>
+              {names.map((name, idx) => (
+                <div key={idx} className="space-y-1">
+                  <span className="text-xs text-slate-500 font-semibold">Nombre Asistente #{idx + 1}</span>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => handleNameChange(idx, e.target.value)}
+                    placeholder="Ej: Juan Pérez"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-800 outline-none transition focus:border-[#74ACDF] focus:ring-2 focus:ring-[#74ACDF]/20 capitalize"
+                  />
+                </div>
+              ))}
+            </div>
+
             {/* Referral Code */}
             <div>
               <label htmlFor="referral" className="block text-sm font-semibold text-slate-700">
-                Código de Referido (Scout / Promotor) <span className="text-slate-400 font-normal">(Opcional)</span>
+                Código de Referido / Promotor <span className="text-slate-400 font-normal">(Opcional)</span>
               </label>
               <input
                 type="text"
@@ -183,6 +241,9 @@ export default function CheckoutPage() {
                 placeholder="Ej: MESSI10"
                 className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-800 outline-none transition focus:border-[#74ACDF] focus:ring-2 focus:ring-[#74ACDF]/20 placeholder:uppercase"
               />
+              <p className="mt-1 text-xs text-slate-400">
+                Ingresá el código o nombre del Scout que te refirió. Si no existe, se registrará automáticamente.
+              </p>
             </div>
 
             {/* Receipt Upload */}
@@ -237,7 +298,7 @@ export default function CheckoutPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-gradient-to-r from-[#74ACDF] via-[#5490c4] to-[#74ACDF] py-4 font-bold text-white shadow-xl hover:from-[#5490c4] hover:to-[#437fb2] transition disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full rounded-xl bg-gradient-to-r from-[#74ACDF] via-[#5490c4] to-[#74ACDF] py-4 font-bold text-white shadow-xl hover:from-[#5490c4] hover:to-[#437fb2] transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
             >
               {loading ? (
                 <>

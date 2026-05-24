@@ -27,6 +27,7 @@ model Purchase {
   buyer_email    String
   receipt_url    String
   quantity       Int
+  attendee_names String        @default("[]") // JSON string storing attendee names
   payment_status PaymentStatus @default(PENDING)
   promoter_id    String?
   promoter       Promoter?     @relation(fields: [promoter_id], references: [id])
@@ -38,6 +39,7 @@ model Ticket {
   id           String    @id @default(uuid())
   purchase_id  String
   purchase     Purchase  @relation(fields: [purchase_id], references: [id], onDelete: Cascade)
+  holder_name  String    @default("")
   entry_status Boolean   @default(false)
   entry_date   DateTime?
 }

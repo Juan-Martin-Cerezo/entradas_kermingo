@@ -43,13 +43,22 @@ export async function POST(req: Request) {
         data: { payment_status: 'APPROVED' },
       });
 
-      const ticketCreations = Array.from({ length: purchase.quantity }).map(() =>
-        tx.ticket.create({
+      let names: string[] = [];
+      try {
+        names = JSON.parse(purchase.attendee_names);
+      } catch {
+        names = [];
+      }
+
+      const ticketCreations = Array.from({ length: purchase.quantity }).map((_, index) => {
+        const holderName = names[index] || `Invitado ${index + 1}`;
+        return tx.ticket.create({
           data: {
             purchase_id: purchaseId,
+            holder_name: holderName,
           },
-        })
-      );
+        });
+      });
 
       return Promise.all(ticketCreations);
     });
@@ -61,6 +70,7 @@ export async function POST(req: Request) {
         return {
           id: t.id,
           qrDataUrl,
+          holderName: t.holder_name,
         };
       })
     );

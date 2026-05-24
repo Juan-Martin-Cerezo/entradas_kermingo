@@ -26,6 +26,7 @@ export async function POST(req: Request) {
           error: 'TICKET ALREADY USED',
           entryDate: ticket.entry_date,
           buyerEmail: ticket.purchase.buyer_email,
+          holderName: ticket.holder_name,
         },
         { status: 400 }
       );
@@ -46,6 +47,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       buyerEmail: updatedTicket.purchase.buyer_email,
+      holderName: updatedTicket.holder_name,
       ticketId: updatedTicket.id,
       entryDate: updatedTicket.entry_date,
     });
