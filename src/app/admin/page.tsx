@@ -139,6 +139,9 @@ export default function AdminDashboard() {
             🏆 KERMINGO 2026 ADMIN
           </Link>
           <div className="flex items-center gap-4">
+            <Link href="/admin/asistentes" className="rounded-lg bg-white/20 px-4 py-2 text-sm font-bold hover:bg-white/30 transition">
+              📋 Planilla
+            </Link>
             <Link href="/admin/referidos" className="rounded-lg bg-white/20 px-4 py-2 text-sm font-bold hover:bg-white/30 transition">
               📊 Referidos
             </Link>
