@@ -124,7 +124,7 @@ export default function CheckoutPage() {
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-[#74ACDF] via-white to-[#74ACDF]">
       {/* Header / Hero */}
-      <header className="py-10 text-center text-slate-800">
+      <header className="py-10 text-center text-slate-800 px-4">
         <div className="mx-auto mb-3 flex justify-center gap-2 text-4xl">
           <span>🇦🇷</span>
           <span className="animate-bounce">⚽</span>
@@ -133,8 +133,8 @@ export default function CheckoutPage() {
         <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
           KERMINGO <span className="text-[#D4AF37]">2026</span>
         </h1>
-        <p className="mt-2 text-lg font-medium text-slate-700">
-          Rumbo a la Copa del Mundo — Scout Event
+        <p className="mt-2 text-lg font-bold text-slate-700">
+          20 de Junio - Estomba 1942
         </p>
       </header>
 
@@ -146,13 +146,13 @@ export default function CheckoutPage() {
           </h2>
 
           {/* Friendly Guide */}
-          <div className="mb-6 rounded-2xl bg-amber-50 p-4 text-sm text-slate-800 border border-amber-200">
-            <h3 className="mb-2 font-bold text-amber-800 flex items-center gap-1.5">
+          <div className="mb-6 rounded-2xl bg-amber-50 p-5 text-sm text-slate-850 border border-amber-200 shadow-inner">
+            <h3 className="mb-2.5 font-bold text-amber-900 flex items-center gap-1.5 text-base">
               <span>💡</span> ¿Cómo funciona tu compra?
             </h3>
-            <ol className="list-decimal list-inside space-y-1.5 text-slate-600 text-xs">
-              <li>Realizás la transferencia bancaria por el total de las entradas ($5.500 por cada una).</li>
+            <ol className="list-decimal list-inside space-y-2 text-slate-700 text-xs font-semibold">
               <li>Completás tus datos y los nombres de las personas que van a asistir.</li>
+              <li>Realizás la transferencia bancaria por el total de las entradas ($5.500 por cada una).</li>
               <li>Subís una foto o PDF del comprobante de transferencia bancaria.</li>
               <li>
                 <strong>¡Muy importante!</strong> Una vez que confirmemos tu pago, te llegará un mail con <strong>un código QR por cada asistente</strong>.
@@ -203,7 +203,7 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   onClick={() => handleQuantityChange(Math.max(1, quantity - 1))}
-                  className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-lg font-bold text-slate-600 transition hover:bg-slate-200"
+                  className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-lg font-bold text-slate-600 transition hover:bg-slate-200 cursor-pointer"
                 >
                   -
                 </button>
@@ -211,7 +211,7 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   onClick={() => handleQuantityChange(quantity + 1)}
-                  className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-lg font-bold text-slate-600 transition hover:bg-slate-200"
+                  className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-lg font-bold text-slate-600 transition hover:bg-slate-200 cursor-pointer"
                 >
                   +
                 </button>

@@ -123,7 +123,7 @@ export default function ReferidosPage() {
 
       {/* Main Content */}
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
             <span>📊</span> Liquidación de Comisiones por Referidos
           </h1>
@@ -132,19 +132,30 @@ export default function ReferidosPage() {
           </Link>
         </div>
 
+        {/* Disclaimer for Unidad Scout Mártires Palotinos */}
+        <div className="mb-6 rounded-2xl bg-amber-50 border-2 border-amber-300 p-4 shadow-sm flex items-start gap-3">
+          <span className="text-2xl mt-0.5">⚠️</span>
+          <div>
+            <h4 className="font-extrabold text-amber-900 text-sm">Aviso Importante (Disclaimer)</h4>
+            <p className="text-xs text-amber-800 mt-0.5 font-medium">
+              El sistema de asignación de comisiones por referidos está habilitado exclusivamente para los Scouts pertenecientes a la **Unidad Scout Mártires Palotinos**. Todo pago de incentivos y rendiciones se auditará bajo esta unidad de forma estricta.
+            </p>
+          </div>
+        </div>
+
         {/* Overview Cards */}
-        <div className="mb-8 grid gap-4 sm:grid-cols-2">
+        <div className="mb-8 grid gap-4 grid-cols-2">
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex justify-between items-center">
             <div>
-              <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Entradas Referidas</span>
-              <span className="block text-3xl font-extrabold text-[#437fb2] mt-1">{totalTicketsReferred}</span>
+              <span className="text-slate-400 text-xs font-bold uppercase tracking-wider block sm:inline">Entradas Referidas</span>
+              <span className="block text-xl sm:text-3xl font-extrabold text-[#437fb2] mt-1">{totalTicketsReferred}</span>
             </div>
             <span className="text-3xl">⚽</span>
           </div>
           <div className="rounded-2xl border-4 border-[#D4AF37] bg-white p-6 shadow-md flex justify-between items-center">
             <div>
-              <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Comisiones Totales</span>
-              <span className="block text-3xl font-extrabold text-[#D4AF37] mt-1">
+              <span className="text-slate-400 text-xs font-bold uppercase tracking-wider block sm:inline">Comisiones Totales</span>
+              <span className="block text-xl sm:text-3xl font-extrabold text-[#D4AF37] mt-1">
                 ${totalCommissions.toLocaleString('es-AR')}
               </span>
             </div>
@@ -172,23 +183,24 @@ export default function ReferidosPage() {
             <p className="text-slate-400">Aún no se han aprobado compras referidas por ningún promotor.</p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          /* Wrapped in overflow-x-auto to make table fully mobile-responsive */
+          <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
             <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
               <thead className="bg-[#74ACDF]/10">
                 <tr>
-                  <th className="px-6 py-4 font-bold text-slate-700">Promotor / Scout</th>
-                  <th className="px-6 py-4 font-bold text-slate-700">Código</th>
-                  <th className="px-6 py-4 font-bold text-slate-700 text-center">Entradas Vendidas</th>
-                  <th className="px-6 py-4 font-bold text-[#D4AF37] text-right">Comisión ($1000 c/u)</th>
+                  <th className="px-6 py-4 font-bold text-slate-700 whitespace-nowrap">Scout (Referente)</th>
+                  <th className="px-6 py-4 font-bold text-slate-700 whitespace-nowrap">Identificador</th>
+                  <th className="px-6 py-4 font-bold text-slate-700 text-center whitespace-nowrap">Entradas Vendidas</th>
+                  <th className="px-6 py-4 font-bold text-[#D4AF37] text-right whitespace-nowrap">Comisión ($1000 c/u)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {report.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-50 transition">
-                    <td className="px-6 py-4 font-semibold text-slate-800">{item.name}</td>
-                    <td className="px-6 py-4 font-mono text-slate-500">{item.referralCode}</td>
-                    <td className="px-6 py-4 text-center font-bold text-slate-700">{item.totalTickets}</td>
-                    <td className="px-6 py-4 text-right font-extrabold text-[#D4AF37] text-base">
+                    <td className="px-6 py-4 font-semibold text-slate-800 whitespace-nowrap capitalize">{item.name}</td>
+                    <td className="px-6 py-4 font-mono text-slate-500 whitespace-nowrap">{item.referralCode}</td>
+                    <td className="px-6 py-4 text-center font-bold text-slate-700 whitespace-nowrap">{item.totalTickets}</td>
+                    <td className="px-6 py-4 text-right font-extrabold text-[#D4AF37] text-base whitespace-nowrap">
                       ${item.commission.toLocaleString('es-AR')}
                     </td>
                   </tr>

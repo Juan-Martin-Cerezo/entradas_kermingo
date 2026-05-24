@@ -19,10 +19,21 @@ interface Purchase {
   createdAt: string;
 }
 
+interface Stats {
+  approvedTickets: number;
+  pendingTickets: number;
+  rejectedTickets: number;
+  approvedPurchasesCount: number;
+  pendingPurchasesCount: number;
+  rejectedPurchasesCount: number;
+  totalEarnings: number;
+}
+
 export default function AdminDashboard() {
   const [password, setPassword] = useState('');
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +47,18 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  const fetchStats = async (passToVerify: string) => {
+    try {
+      const res = await fetch(`/api/admin/stats?password=${encodeURIComponent(passToVerify)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setStats(data);
+      }
+    } catch (err) {
+      console.error('Failed to load stats:', err);
+    }
+  };
+
   const verifyAndFetch = async (passToVerify: string) => {
     setLoading(true);
     setError(null);
@@ -48,6 +71,7 @@ export default function AdminDashboard() {
       setPurchases(data);
       setIsAuthorized(true);
       localStorage.setItem('kermingo_admin_pass', passToVerify);
+      await fetchStats(passToVerify);
     } catch (err: any) {
       setError(err.message || 'Error de autenticación.');
       setIsAuthorized(false);
@@ -82,6 +106,7 @@ export default function AdminDashboard() {
       }
 
       setPurchases((prev) => prev.filter((p) => p.id !== purchaseId));
+      await fetchStats(password);
     } catch (err: any) {
       setError(err.message || 'Error al procesar la acción.');
     } finally {
@@ -94,6 +119,7 @@ export default function AdminDashboard() {
     setPassword('');
     setIsAuthorized(false);
     setPurchases([]);
+    setStats(null);
   };
 
   if (!isAuthorized) {
@@ -157,6 +183,37 @@ export default function AdminDashboard() {
 
       {/* Main Content */}
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+        
+        {/* Statistics Panels */}
+        {stats && (
+          <section className="mb-8 grid gap-4 grid-cols-2 md:grid-cols-4">
+            <div className="rounded-2xl border-4 border-[#D4AF37] bg-white p-5 shadow-md text-center">
+              <span className="text-slate-400 text-[10px] sm:text-xs font-bold uppercase block">Entradas Vendidas</span>
+              <span className="text-xl sm:text-3xl font-extrabold text-[#D4AF37] mt-1">
+                {stats.approvedTickets} ⚽
+              </span>
+            </div>
+            <div className="rounded-2xl border-4 border-emerald-500 bg-white p-5 shadow-md text-center">
+              <span className="text-slate-400 text-[10px] sm:text-xs font-bold uppercase block">Recaudado (Total)</span>
+              <span className="text-xl sm:text-3xl font-extrabold text-emerald-600 mt-1">
+                ${stats.totalEarnings.toLocaleString('es-AR')}
+              </span>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm text-center">
+              <span className="text-slate-400 text-[10px] sm:text-xs font-bold uppercase block text-[#74ACDF]">Por Verificar</span>
+              <span className="text-xl sm:text-3xl font-extrabold text-[#74ACDF] mt-1">
+                {stats.pendingTickets} ⏳
+              </span>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm text-center">
+              <span className="text-slate-400 text-[10px] sm:text-xs font-bold uppercase block text-red-500">Rechazadas</span>
+              <span className="text-xl sm:text-3xl font-extrabold text-red-500 mt-1">
+                {stats.rejectedTickets} ✕
+              </span>
+            </div>
+          </section>
+        )}
+
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
             <span>⏳</span> Transferencias Pendientes de Aprobación
@@ -230,9 +287,9 @@ export default function AdminDashboard() {
 
                   {purchase.promoter && (
                     <div className="flex justify-between rounded-lg bg-[#74ACDF]/10 p-2 text-xs">
-                      <span className="text-slate-600">Referido:</span>
+                      <span className="text-slate-600">Referido por:</span>
                       <span className="font-bold text-[#437fb2]">
-                        {purchase.promoter.name} ({purchase.promoter.referral_code})
+                        Scout {purchase.promoter.name}
                       </span>
                     </div>
                   )}
@@ -240,7 +297,7 @@ export default function AdminDashboard() {
                   {/* View Receipt Button */}
                   <button
                     onClick={() => setSelectedReceipt(purchase.receipt_url)}
-                    className="w-full rounded-lg border border-[#74ACDF] bg-white py-2 text-sm font-bold text-[#74ACDF] hover:bg-[#74ACDF]/5 transition"
+                    className="w-full rounded-lg border border-[#74ACDF] bg-white py-2 text-sm font-bold text-[#74ACDF] hover:bg-[#74ACDF]/5 transition cursor-pointer"
                   >
                     🔍 Ver Comprobante
                   </button>
@@ -251,14 +308,14 @@ export default function AdminDashboard() {
                   <button
                     onClick={() => handleAction(purchase.id, 'REJECT')}
                     disabled={actionLoadingId !== null}
-                    className="rounded-lg bg-red-500 py-2.5 text-sm font-bold text-white hover:bg-red-600 transition disabled:opacity-50"
+                    className="rounded-lg bg-red-500 py-2.5 text-sm font-bold text-white hover:bg-red-600 transition disabled:opacity-50 cursor-pointer"
                   >
                     Rechazar
                   </button>
                   <button
                     onClick={() => handleAction(purchase.id, 'APPROVE')}
                     disabled={actionLoadingId !== null}
-                    className="rounded-lg bg-green-500 py-2.5 text-sm font-bold text-white hover:bg-green-600 transition disabled:opacity-50 flex items-center justify-center gap-1"
+                    className="rounded-lg bg-green-500 py-2.5 text-sm font-bold text-white hover:bg-green-600 transition disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
                   >
                     {actionLoadingId === purchase.id ? (
                       <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
@@ -279,7 +336,7 @@ export default function AdminDashboard() {
           <div className="relative max-h-full max-w-3xl overflow-hidden rounded-2xl bg-white p-2 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setSelectedReceipt(null)}
-              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white font-bold hover:bg-black"
+              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white font-bold hover:bg-black cursor-pointer"
             >
               ✕
             </button>
