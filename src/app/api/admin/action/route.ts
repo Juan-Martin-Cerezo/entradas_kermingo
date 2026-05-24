@@ -85,12 +85,15 @@ export async function POST(req: Request) {
 
     // Send email
     try {
+      if (!process.env.SMTP_USER || process.env.SMTP_USER.includes('placeholder')) {
+        throw new Error('Las credenciales SMTP (correo) siguen en valores de marcador de posición (placeholder) en tu archivo .env.');
+      }
       await sendTicketsEmail(purchase.buyer_email, ticketsWithQr);
-    } catch (mailError) {
-      console.error('Nodemailer error:', mailError);
+    } catch (mailError: any) {
+      console.error('Mailer execution warning:', mailError);
       return NextResponse.json({
         success: true,
-        warning: 'Purchase approved and tickets generated, but email failed to send.',
+        warning: `¡Entradas generadas con éxito! Sin embargo, el email no pudo ser enviado: ${mailError.message || mailError}`,
       });
     }
 
