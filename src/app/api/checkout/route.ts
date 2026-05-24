@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
 
 export async function POST(req: Request) {
   try {
@@ -51,18 +49,12 @@ export async function POST(req: Request) {
       promoterId = promoter.id;
     }
 
-    // Save receipt locally
+    // Convert receipt to base64 data URL (Vercel serverless has read-only filesystem)
     const bytes = await receiptFile.arrayBuffer();
     const buffer = Buffer.from(bytes);
-
-    const uploadsDir = join(process.cwd(), 'public', 'uploads');
-    await mkdir(uploadsDir, { recursive: true });
-
-    const filename = `${Date.now()}_${receiptFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    const filePath = join(uploadsDir, filename);
-    await writeFile(filePath, buffer);
-
-    const receiptUrl = `/uploads/${filename}`;
+    const base64 = buffer.toString('base64');
+    const mimeType = receiptFile.type || 'application/octet-stream';
+    const receiptUrl = `data:${mimeType};base64,${base64}`;
 
     // Create Purchase
     const purchase = await db.purchase.create({
@@ -82,3 +74,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 });
   }
 }
+
