@@ -66,9 +66,18 @@ export default function AsistentesBackupPage() {
         body: JSON.stringify({ ticketId, action, password }),
       });
 
-      const data = await res.json();
+      let data: any = null;
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          data = await res.json();
+        } catch {
+          // ignore
+        }
+      }
+
       if (!res.ok) {
-        throw new Error(data.error || 'Ocurrió un error al procesar el ingreso.');
+        throw new Error(data?.error || 'Ocurrió un error al procesar el ingreso.');
       }
 
       // Update state

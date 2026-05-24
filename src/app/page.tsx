@@ -66,9 +66,21 @@ export default function CheckoutPage() {
         body: formData,
       });
 
-      const data = await res.json();
+      let data: any = null;
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          data = await res.json();
+        } catch {
+          // ignore parse error
+        }
+      }
+
       if (!res.ok) {
-        throw new Error(data.error || 'Ocurrió un error al procesar tu compra.');
+        if (res.status === 413) {
+          throw new Error('El comprobante es demasiado pesado. Por favor, subí una captura de pantalla comprimida o un archivo menor a 4MB.');
+        }
+        throw new Error(data?.error || 'Ocurrió un error al procesar tu compra.');
       }
 
       setSuccess(true);
@@ -285,7 +297,15 @@ export default function CheckoutPage() {
                         className="sr-only"
                         onChange={(e) => {
                           if (e.target.files && e.target.files.length > 0) {
-                            setReceipt(e.target.files[0]);
+                            const file = e.target.files[0];
+                            if (file.size > 4 * 1024 * 1024) {
+                              setError('El comprobante es demasiado pesado (máximo 4MB). Por favor, subí una captura de pantalla comprimida o un archivo más chico.');
+                              setReceipt(null);
+                              e.target.value = '';
+                            } else {
+                              setError(null);
+                              setReceipt(file);
+                            }
                           }
                         }}
                       />

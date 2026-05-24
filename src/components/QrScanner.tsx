@@ -75,12 +75,20 @@ export default function QrScanner({ onScanResult }: QrScannerProps) {
         body: JSON.stringify({ ticketId }),
       });
 
-      const data = await res.json();
+      let data: any = null;
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          data = await res.json();
+        } catch {
+          // ignore
+        }
+      }
 
       if (res.ok) {
         onScanResult({ success: true, data });
       } else {
-        onScanResult({ success: false, error: data.error || 'INVALID TICKET' });
+        onScanResult({ success: false, error: data?.error || 'INVALID TICKET' });
       }
     } catch (err: any) {
       onScanResult({ success: false, error: 'CONNECTION ERROR' });
