@@ -53,13 +53,13 @@ export async function sendTicketsEmail(buyerEmail: string, tickets: TicketInfo[]
               ⚽ ¡KERMINGO 2026! ⚽
             </h1>
             <p style="color: #ffffff; margin: 5px 0 0 0; font-size: 1rem; font-family: sans-serif; opacity: 0.9;">
-              Rumbo a la Copa del Mundo - Scout Event
+              20 de Junio - Estomba 1942
             </p>
           </div>
           
           <!-- Content -->
           <div style="padding: 30px 20px;">
-            <h2 style="color: #333333; font-family: sans-serif; margin-top: 0;">¡Hola de parte de la organización!</h2>
+            <h2 style="color: #333333; font-family: sans-serif; margin-top: 0;">¡Gracias por tu compra!</h2>
             <p style="font-size: 1rem; line-height: 1.5; color: #555555; font-family: sans-serif;">
               Tu transferencia ha sido verificada y tus entradas han sido emitidas con éxito. A continuación, encontrarás tus códigos QR correspondientes a cada titular.
             </p>
@@ -76,7 +76,7 @@ export async function sendTicketsEmail(buyerEmail: string, tickets: TicketInfo[]
           <!-- Footer -->
           <div style="background-color: #f7fafc; padding: 15px; text-align: center; border-top: 1px solid #eeeeee;">
             <p style="margin: 0; font-size: 0.8rem; color: #aaaaaa; font-family: sans-serif;">
-              Kermingo 2026 - Scout Event Argentina. Todos los derechos reservados.
+              Kermingo 2026
             </p>
           </div>
         </div>
