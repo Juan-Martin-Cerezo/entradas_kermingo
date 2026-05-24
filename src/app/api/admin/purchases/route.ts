@@ -10,17 +10,17 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const pendingPurchases = await db.purchase.findMany({
-      where: { payment_status: 'PENDING' },
+    // Retrieve all purchases to support multi-tab management (Pending, Approved, Rejected)
+    const purchases = await db.purchase.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
         promoter: true,
       },
     });
 
-    return NextResponse.json(pendingPurchases);
+    return NextResponse.json(purchases);
   } catch (error: any) {
-    console.error('Fetch pending purchases error:', error);
+    console.error('Fetch purchases error:', error);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

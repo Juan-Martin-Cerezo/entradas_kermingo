@@ -38,6 +38,7 @@ export default function AdminDashboard() {
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedReceipt, setSelectedReceipt] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
 
   useEffect(() => {
     const savedPassword = localStorage.getItem('kermingo_admin_pass');
@@ -86,8 +87,12 @@ export default function AdminDashboard() {
     verifyAndFetch(password);
   };
 
-  const handleAction = async (purchaseId: string, action: 'APPROVE' | 'REJECT') => {
-    setActionLoadingId(purchaseId);
+  const handleAction = async (purchaseId: string, action: 'APPROVE' | 'REJECT' | 'DELETE') => {
+    if (action === 'DELETE' && !confirm('¿Estás seguro de que deseas eliminar esta compra? Esto borrará también todas sus entradas y códigos QR asociados.')) {
+      return;
+    }
+
+    setActionLoadingId(purchaseId + '_' + action);
     setError(null);
     try {
       const res = await fetch('/api/admin/action', {
@@ -105,7 +110,19 @@ export default function AdminDashboard() {
         alert(data.warning);
       }
 
-      setPurchases((prev) => prev.filter((p) => p.id !== purchaseId));
+      // Update state local list
+      if (action === 'DELETE') {
+        setPurchases((prev) => prev.filter((p) => p.id !== purchaseId));
+      } else {
+        // Update local status so it moves to respective tab
+        setPurchases((prev) =>
+          prev.map((p) =>
+            p.id === purchaseId
+              ? { ...p, payment_status: action === 'APPROVE' ? 'APPROVED' : 'REJECTED' }
+              : p
+          )
+        );
+      }
       await fetchStats(password);
     } catch (err: any) {
       setError(err.message || 'Error al procesar la acción.');
@@ -121,6 +138,8 @@ export default function AdminDashboard() {
     setPurchases([]);
     setStats(null);
   };
+
+  const filteredPurchases = purchases.filter((p) => p.payment_status === activeTab);
 
   if (!isAuthorized) {
     return (
@@ -214,13 +233,38 @@ export default function AdminDashboard() {
           </section>
         )}
 
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <span>⏳</span> Transferencias Pendientes de Aprobación
-          </h1>
-          <span className="rounded-full bg-[#74ACDF]/20 px-3 py-1 text-sm font-bold text-[#437fb2]">
-            {purchases.length} pendientes
-          </span>
+        {/* Tabbed Interface */}
+        <div className="mb-6 flex border-b border-slate-200 overflow-x-auto whitespace-nowrap">
+          <button
+            onClick={() => setActiveTab('PENDING')}
+            className={`px-6 py-2.5 font-bold text-sm border-b-4 transition ${
+              activeTab === 'PENDING'
+                ? 'border-[#74ACDF] text-[#437fb2]'
+                : 'border-transparent text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            Pendientes de Pago ({purchases.filter((p) => p.payment_status === 'PENDING').length})
+          </button>
+          <button
+            onClick={() => setActiveTab('APPROVED')}
+            className={`px-6 py-2.5 font-bold text-sm border-b-4 transition ${
+              activeTab === 'APPROVED'
+                ? 'border-green-500 text-green-600'
+                : 'border-transparent text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            Aprobados ({purchases.filter((p) => p.payment_status === 'APPROVED').length})
+          </button>
+          <button
+            onClick={() => setActiveTab('REJECTED')}
+            className={`px-6 py-2.5 font-bold text-sm border-b-4 transition ${
+              activeTab === 'REJECTED'
+                ? 'border-red-500 text-red-600'
+                : 'border-transparent text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            Rechazados ({purchases.filter((p) => p.payment_status === 'REJECTED').length})
+          </button>
         </div>
 
         {error && (
@@ -236,22 +280,33 @@ export default function AdminDashboard() {
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
           </div>
-        ) : purchases.length === 0 ? (
+        ) : filteredPurchases.length === 0 ? (
           <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white py-16 text-center shadow-sm">
             <span className="text-5xl block mb-2">⭐</span>
-            <p className="text-lg font-bold text-slate-600">¡Todo al día!</p>
-            <p className="text-slate-400">No hay transferencias pendientes para revisar.</p>
+            <p className="text-lg font-bold text-slate-600">¡Ninguno por acá!</p>
+            <p className="text-slate-400">No hay transferencias registradas en esta categoría.</p>
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {purchases.map((purchase) => (
+            {filteredPurchases.map((purchase) => (
               <div key={purchase.id} className="flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
                 {/* Header */}
-                <div className="bg-slate-50 p-4 border-b border-slate-100">
-                  <p className="text-sm font-bold text-slate-800 truncate">{purchase.buyer_email}</p>
-                  <p className="text-xs text-slate-400">
-                    {new Date(purchase.createdAt).toLocaleString('es-AR')}
-                  </p>
+                <div className="bg-slate-50 p-4 border-b border-slate-100 flex justify-between items-center gap-2">
+                  <div className="truncate">
+                    <p className="text-sm font-bold text-slate-800 truncate">{purchase.buyer_email}</p>
+                    <p className="text-xs text-slate-400">
+                      {new Date(purchase.createdAt).toLocaleString('es-AR')}
+                    </p>
+                  </div>
+                  {/* Quick Delete Trash Icon for any tab */}
+                  <button
+                    onClick={() => handleAction(purchase.id, 'DELETE')}
+                    disabled={actionLoadingId === purchase.id + '_DELETE'}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition cursor-pointer"
+                    title="Eliminar registro"
+                  >
+                    🗑️
+                  </button>
                 </div>
 
                 {/* Details */}
@@ -303,27 +358,35 @@ export default function AdminDashboard() {
                   </button>
                 </div>
 
-                {/* Actions */}
-                <div className="grid grid-cols-2 border-t border-slate-100 p-2 gap-2 bg-slate-50">
-                  <button
-                    onClick={() => handleAction(purchase.id, 'REJECT')}
-                    disabled={actionLoadingId !== null}
-                    className="rounded-lg bg-red-500 py-2.5 text-sm font-bold text-white hover:bg-red-600 transition disabled:opacity-50 cursor-pointer"
-                  >
-                    Rechazar
-                  </button>
-                  <button
-                    onClick={() => handleAction(purchase.id, 'APPROVE')}
-                    disabled={actionLoadingId !== null}
-                    className="rounded-lg bg-green-500 py-2.5 text-sm font-bold text-white hover:bg-green-600 transition disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
-                  >
-                    {actionLoadingId === purchase.id ? (
-                      <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                    ) : (
-                      'Aprobar ⚽'
-                    )}
-                  </button>
-                </div>
+                {/* Tab Actions */}
+                {purchase.payment_status === 'PENDING' && (
+                  <div className="grid grid-cols-2 border-t border-slate-100 p-2 gap-2 bg-slate-50">
+                    <button
+                      onClick={() => handleAction(purchase.id, 'REJECT')}
+                      disabled={actionLoadingId === purchase.id + '_REJECT'}
+                      className="rounded-lg bg-red-500 py-2.5 text-sm font-bold text-white hover:bg-red-600 transition disabled:opacity-50 cursor-pointer"
+                    >
+                      Rechazar
+                    </button>
+                    <button
+                      onClick={() => handleAction(purchase.id, 'APPROVE')}
+                      disabled={actionLoadingId === purchase.id + '_APPROVE'}
+                      className="rounded-lg bg-green-500 py-2.5 text-sm font-bold text-white hover:bg-green-600 transition disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      {actionLoadingId === purchase.id + '_APPROVE' ? (
+                        <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                      ) : (
+                        'Aprobar ⚽'
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {purchase.payment_status !== 'PENDING' && (
+                  <div className="border-t border-slate-100 p-2 bg-slate-50 text-center text-xs font-semibold text-slate-500">
+                    Estado: {purchase.payment_status === 'APPROVED' ? '🟢 APROBADO' : '🔴 RECHAZADO'}
+                  </div>
+                )}
               </div>
             ))}
           </div>

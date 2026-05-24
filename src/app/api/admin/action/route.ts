@@ -11,7 +11,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!purchaseId || !['APPROVE', 'REJECT'].includes(action)) {
+    if (!purchaseId || !['APPROVE', 'REJECT', 'DELETE'].includes(action)) {
       return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 });
     }
 
@@ -21,6 +21,14 @@ export async function POST(req: Request) {
 
     if (!purchase) {
       return NextResponse.json({ error: 'Purchase not found' }, { status: 404 });
+    }
+
+    // Handle DELETE action (cascades automatically to Tickets in DB schema)
+    if (action === 'DELETE') {
+      await db.purchase.delete({
+        where: { id: purchaseId },
+      });
+      return NextResponse.json({ success: true });
     }
 
     if (purchase.payment_status !== 'PENDING') {
