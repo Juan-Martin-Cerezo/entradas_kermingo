@@ -257,8 +257,8 @@ export default function CheckoutPage() {
                 placeholder="Ej: MARTINEZ EMILIANO"
                 className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-800 outline-none transition focus:border-[#74ACDF] focus:ring-2 focus:ring-[#74ACDF]/20 placeholder:uppercase"
               />
-              <p className="mt-1 text-xs text-slate-400">
-                Ingresá el nombre completo o apellido del Scout que te refirió para que sume su comisión.
+              <p className="mt-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                ⚠️ <span className="font-semibold">Aviso:</span> El sistema de referidos está habilitado exclusivamente para los Scouts pertenecientes a la <strong>Unidad Scout Mártires Palotinos</strong>. Ingresá el nombre completo del Scout que te invitó.
               </p>
             </div>
 

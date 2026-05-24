@@ -132,16 +132,8 @@ export default function ReferidosPage() {
           </Link>
         </div>
 
-        {/* Disclaimer for Unidad Scout Mártires Palotinos */}
-        <div className="mb-6 rounded-2xl bg-amber-50 border-2 border-amber-300 p-4 shadow-sm flex items-start gap-3">
-          <span className="text-2xl mt-0.5">⚠️</span>
-          <div>
-            <h4 className="font-extrabold text-amber-900 text-sm">Aviso Importante (Disclaimer)</h4>
-            <p className="text-xs text-amber-800 mt-0.5 font-medium">
-              El sistema de asignación de comisiones por referidos está habilitado exclusivamente para los Scouts pertenecientes a la **Unidad Scout Mártires Palotinos**. Todo pago de incentivos y rendiciones se auditará bajo esta unidad de forma estricta.
-            </p>
-          </div>
-        </div>
+
+
 
         {/* Overview Cards */}
         <div className="mb-8 grid gap-4 grid-cols-2">
