@@ -1,63 +1,257 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+import { useState } from 'react';
+import Image from 'next/image';
+
+export default function CheckoutPage() {
+  const [email, setEmail] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [referralCode, setReferralCode] = useState('');
+  const [receipt, setReceipt] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const pricePerTicket = 5500;
+  const totalPrice = quantity * pricePerTicket;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !receipt) {
+      setError('Por favor completa todos los campos obligatorios.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('email', email);
+      formData.append('quantity', quantity.toString());
+      formData.append('referralCode', referralCode);
+      formData.append('receipt', receipt);
+
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Ocurrió un error al procesar tu compra.');
+      }
+
+      setSuccess(true);
+    } catch (err: any) {
+      setError(err.message || 'Error en la solicitud. Intenta nuevamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#74ACDF] via-white to-[#74ACDF] px-4 py-12">
+        <div className="w-full max-w-md rounded-3xl border-4 border-[#D4AF37] bg-white/95 p-8 text-center shadow-2xl backdrop-blur-md">
+          <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-3xl">
+            🏆
+          </div>
+          <h2 className="mb-2 text-2xl font-bold text-slate-800">¡Pedido Recibido!</h2>
+          <p className="mb-6 text-slate-600">
+            Tu comprobante de transferencia fue cargado correctamente. Nuestro equipo verificará el pago y te enviaremos las entradas con sus correspondientes códigos QR a <strong>{email}</strong> una vez aprobado.
           </p>
+          <div className="rounded-xl bg-[#74ACDF]/10 p-4 border border-[#74ACDF]/30 mb-6 text-left">
+            <h4 className="font-semibold text-slate-800 mb-1">Resumen del Pedido:</h4>
+            <p className="text-sm text-slate-600">Cantidad: {quantity} {quantity === 1 ? 'entrada' : 'entradas'}</p>
+            <p className="text-sm text-slate-600 font-bold">Total Transferido: ${totalPrice.toLocaleString('es-AR')}</p>
+          </div>
+          <button
+            onClick={() => {
+              setSuccess(false);
+              setEmail('');
+              setQuantity(1);
+              setReferralCode('');
+              setReceipt(null);
+            }}
+            className="w-full rounded-xl bg-gradient-to-r from-[#74ACDF] to-[#5490c4] py-3 font-semibold text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
+          >
+            Comprar más entradas
+          </button>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-[#74ACDF] via-white to-[#74ACDF]">
+      {/* Header / Hero */}
+      <header className="py-10 text-center text-slate-800">
+        <div className="mx-auto mb-3 flex justify-center gap-2 text-4xl">
+          <span>🇦🇷</span>
+          <span className="animate-bounce">⚽</span>
+          <span>🏆</span>
+        </div>
+        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
+          KERMINGO <span className="text-[#D4AF37]">2026</span>
+        </h1>
+        <p className="mt-2 text-lg font-medium text-slate-700">
+          Rumbo a la Copa del Mundo — Scout Event
+        </p>
+      </header>
+
+      {/* Checkout Form Card */}
+      <main className="flex-1 px-4 pb-16">
+        <div className="mx-auto max-w-xl rounded-3xl border-4 border-[#D4AF37] bg-white/95 p-6 shadow-2xl backdrop-blur-md sm:p-10">
+          <h2 className="mb-6 text-center text-2xl font-bold text-slate-800">
+            Adquirí tus Entradas
+          </h2>
+
+          {/* Transfer Info */}
+          <div className="mb-8 rounded-2xl border-2 border-dashed border-[#74ACDF] bg-[#74ACDF]/5 p-4 text-sm text-slate-700">
+            <h3 className="mb-2 font-bold text-slate-800 flex items-center gap-2">
+              <span>💳</span> Datos de Transferencia Bancaria
+            </h3>
+            <p className="mb-1"><strong>Banco:</strong> Banco de la Scaloneta</p>
+            <p className="mb-1"><strong>Alias:</strong> kermingo.scout.2026</p>
+            <p className="mb-1"><strong>CBU:</strong> 0000003100012345678901</p>
+            <p className="mt-2 text-xs text-slate-500 font-semibold">
+              * El valor de la entrada anticipada es de <strong>$5.500 ARS</strong>. Transferí el total correspondiente y adjuntá el comprobante abajo.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-semibold text-slate-700">
+                Correo Electrónico del Comprador <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="email"
+                id="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="ejemplo@correo.com"
+                className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-800 outline-none transition focus:border-[#74ACDF] focus:ring-2 focus:ring-[#74ACDF]/20"
+              />
+              <p className="mt-1 text-xs text-slate-400">
+                Aquí recibirás las entradas con los códigos QR una vez que verifiquemos tu pago.
+              </p>
+            </div>
+
+            {/* Quantity */}
+            <div>
+              <label htmlFor="quantity" className="block text-sm font-semibold text-slate-700">
+                Cantidad de Entradas
+              </label>
+              <div className="mt-2 flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-lg font-bold text-slate-600 transition hover:bg-slate-200"
+                >
+                  -
+                </button>
+                <span className="text-xl font-bold text-slate-800 w-8 text-center">{quantity}</span>
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => q + 1)}
+                  className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-lg font-bold text-slate-600 transition hover:bg-slate-200"
+                >
+                  +
+                </button>
+                <div className="ml-auto text-right">
+                  <span className="text-xs text-slate-400 block">Total a pagar</span>
+                  <span className="text-xl font-extrabold text-[#D4AF37]">
+                    ${totalPrice.toLocaleString('es-AR')}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Referral Code */}
+            <div>
+              <label htmlFor="referral" className="block text-sm font-semibold text-slate-700">
+                Código de Referido (Scout / Promotor) <span className="text-slate-400 font-normal">(Opcional)</span>
+              </label>
+              <input
+                type="text"
+                id="referral"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                placeholder="Ej: MESSI10"
+                className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-800 outline-none transition focus:border-[#74ACDF] focus:ring-2 focus:ring-[#74ACDF]/20 placeholder:uppercase"
+              />
+            </div>
+
+            {/* Receipt Upload */}
+            <div>
+              <label htmlFor="receipt" className="block text-sm font-semibold text-slate-700">
+                Comprobante de Transferencia <span className="text-red-500">*</span>
+              </label>
+              <div className="mt-2 flex justify-center rounded-xl border-2 border-dashed border-slate-300 px-6 py-6 transition hover:border-[#74ACDF] bg-slate-50/50">
+                <div className="text-center">
+                  <span className="mx-auto block text-3xl mb-2">📸</span>
+                  <div className="flex text-sm text-slate-600">
+                    <label
+                      htmlFor="file-upload"
+                      className="relative cursor-pointer rounded-md font-semibold text-[#74ACDF] focus-within:outline-none hover:text-[#5490c4]"
+                    >
+                      <span>Subir un archivo</span>
+                      <input
+                        id="file-upload"
+                        name="receipt"
+                        type="file"
+                        accept="image/*,application/pdf"
+                        required
+                        className="sr-only"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files.length > 0) {
+                            setReceipt(e.target.files[0]);
+                          }
+                        }}
+                      />
+                    </label>
+                    <p className="pl-1">o arrastrar y soltar</p>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">PNG, JPG, PDF hasta 10MB</p>
+                  {receipt && (
+                    <div className="mt-3 rounded-lg bg-green-50 p-2 border border-green-200">
+                      <p className="text-xs font-bold text-green-700 flex items-center justify-center gap-1">
+                        ✓ {receipt.name}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {error && (
+              <div className="rounded-xl bg-red-50 p-3 border border-red-200 text-sm font-bold text-red-600 text-center">
+                ⚠ {error}
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-xl bg-gradient-to-r from-[#74ACDF] via-[#5490c4] to-[#74ACDF] py-4 font-bold text-white shadow-xl hover:from-[#5490c4] hover:to-[#437fb2] transition disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Procesando...
+                </>
+              ) : (
+                'Confirmar y Enviar Comprobante 🇦🇷'
+              )}
+            </button>
+          </form>
         </div>
       </main>
     </div>

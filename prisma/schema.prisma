@@ -1,0 +1,43 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Promoter {
+  id            String     @id @default(uuid())
+  name          String
+  referral_code String     @unique
+  purchases     Purchase[]
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Purchase {
+  id             String        @id @default(uuid())
+  buyer_email    String
+  receipt_url    String
+  quantity       Int
+  payment_status PaymentStatus @default(PENDING)
+  promoter_id    String?
+  promoter       Promoter?     @relation(fields: [promoter_id], references: [id])
+  tickets        Ticket[]
+  createdAt      DateTime      @default(now())
+}
+
+model Ticket {
+  id           String    @id @default(uuid())
+  purchase_id  String
+  purchase     Purchase  @relation(fields: [purchase_id], references: [id], onDelete: Cascade)
+  entry_status Boolean   @default(false)
+  entry_date   DateTime?
+}

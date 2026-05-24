@@ -1,0 +1,84 @@
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import QRCode from 'qrcode';
+import { sendTicketsEmail } from '@/lib/mailer';
+
+export async function POST(req: Request) {
+  try {
+    const { purchaseId, action, password } = await req.json();
+
+    if (!password || password !== process.env.ADMIN_PASSWORD) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!purchaseId || !['APPROVE', 'REJECT'].includes(action)) {
+      return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 });
+    }
+
+    const purchase = await db.purchase.findUnique({
+      where: { id: purchaseId },
+    });
+
+    if (!purchase) {
+      return NextResponse.json({ error: 'Purchase not found' }, { status: 404 });
+    }
+
+    if (purchase.payment_status !== 'PENDING') {
+      return NextResponse.json({ error: 'Purchase already processed' }, { status: 400 });
+    }
+
+    if (action === 'REJECT') {
+      await db.purchase.update({
+        where: { id: purchaseId },
+        data: { payment_status: 'REJECTED' },
+      });
+      return NextResponse.json({ success: true });
+    }
+
+    // action === 'APPROVE'
+    // Create tickets and update purchase status in a transaction
+    const tickets = await db.$transaction(async (tx) => {
+      await tx.purchase.update({
+        where: { id: purchaseId },
+        data: { payment_status: 'APPROVED' },
+      });
+
+      const ticketCreations = Array.from({ length: purchase.quantity }).map(() =>
+        tx.ticket.create({
+          data: {
+            purchase_id: purchaseId,
+          },
+        })
+      );
+
+      return Promise.all(ticketCreations);
+    });
+
+    // Generate QR codes
+    const ticketsWithQr = await Promise.all(
+      tickets.map(async (t) => {
+        const qrDataUrl = await QRCode.toDataURL(t.id);
+        return {
+          id: t.id,
+          qrDataUrl,
+        };
+      })
+    );
+
+    // Send email
+    try {
+      await sendTicketsEmail(purchase.buyer_email, ticketsWithQr);
+    } catch (mailError) {
+      console.error('Nodemailer error:', mailError);
+      return NextResponse.json({
+        success: true,
+        warning: 'Purchase approved and tickets generated, but email failed to send.',
+      });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('Admin Action API error:', error);
+    return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 });
+  }
+}
