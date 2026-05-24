@@ -145,6 +145,22 @@ export default function CheckoutPage() {
             Adquirí tus Entradas
           </h2>
 
+          {/* Friendly Guide */}
+          <div className="mb-6 rounded-2xl bg-amber-50 p-4 text-sm text-slate-800 border border-amber-200">
+            <h3 className="mb-2 font-bold text-amber-800 flex items-center gap-1.5">
+              <span>💡</span> ¿Cómo funciona tu compra?
+            </h3>
+            <ol className="list-decimal list-inside space-y-1.5 text-slate-600 text-xs">
+              <li>Realizás la transferencia bancaria por el total de las entradas ($5.500 por cada una).</li>
+              <li>Completás tus datos y los nombres de las personas que van a asistir.</li>
+              <li>Subís una foto o PDF del comprobante de transferencia bancaria.</li>
+              <li>
+                <strong>¡Muy importante!</strong> Una vez que confirmemos tu pago, te llegará un mail con <strong>un código QR por cada asistente</strong>.
+              </li>
+              <li>Cada persona deberá mostrar su código QR desde su celular al ingresar al evento para registrar la entrada.</li>
+            </ol>
+          </div>
+
           {/* Transfer Info */}
           <div className="mb-8 rounded-2xl border-2 border-dashed border-[#74ACDF] bg-[#74ACDF]/5 p-4 text-sm text-slate-700">
             <h3 className="mb-2 font-bold text-slate-800 flex items-center gap-2">
@@ -228,21 +244,21 @@ export default function CheckoutPage() {
               ))}
             </div>
 
-            {/* Referral Code */}
+            {/* Referral Scout Name */}
             <div>
               <label htmlFor="referral" className="block text-sm font-semibold text-slate-700">
-                Código de Referido / Promotor <span className="text-slate-400 font-normal">(Opcional)</span>
+                Nombre del Scout que te invitó <span className="text-slate-400 font-normal">(Opcional)</span>
               </label>
               <input
                 type="text"
                 id="referral"
                 value={referralCode}
                 onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                placeholder="Ej: MESSI10"
+                placeholder="Ej: MARTINEZ EMILIANO"
                 className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-800 outline-none transition focus:border-[#74ACDF] focus:ring-2 focus:ring-[#74ACDF]/20 placeholder:uppercase"
               />
               <p className="mt-1 text-xs text-slate-400">
-                Ingresá el código o nombre del Scout que te refirió. Si no existe, se registrará automáticamente.
+                Ingresá el nombre completo o apellido del Scout que te refirió para que sume su comisión.
               </p>
             </div>
 
