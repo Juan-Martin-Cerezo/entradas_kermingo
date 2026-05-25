@@ -162,8 +162,10 @@ export default function CheckoutPage() {
             🏆
           </div>
           <h2 className="mb-2 text-2xl font-bold text-slate-800">¡Pedido Recibido!</h2>
-          <p className="mb-6 text-slate-600">
-            Tu comprobante de transferencia fue cargado correctamente. Nuestro equipo verificará el pago y te enviaremos las entradas con sus correspondientes códigos QR a <strong>{email}</strong> una vez aprobado.
+          <p className="mb-6 text-slate-600 text-sm leading-relaxed">
+            Tu comprobante de transferencia fue cargado correctamente. 
+            <br /><br />
+            <strong>⚠️ Recordá:</strong> La verificación del pago se realiza de manera <strong>manual</strong> por nuestro equipo de Scouts, por lo que la confirmación <strong>no es instantánea</strong> y puede demorar unas horas. Te enviaremos las entradas con sus correspondientes códigos QR a <strong>{email}</strong> una vez aprobado. ¡No te desesperes, tu lugar ya está guardado!
           </p>
           <div className="rounded-xl bg-[#74ACDF]/10 p-4 border border-[#74ACDF]/30 mb-6 text-left">
             <h4 className="font-semibold text-slate-800 mb-1">Resumen del Pedido:</h4>
@@ -230,7 +232,7 @@ export default function CheckoutPage() {
               <li>Realizás la transferencia bancaria por el total de las entradas ($5.500 por cada una).</li>
               <li>Subís una foto o PDF del comprobante de transferencia bancaria.</li>
               <li>
-                <strong>¡Muy importante!</strong> Una vez que confirmemos tu pago, te llegará un mail con <strong>un código QR por cada asistente</strong>.
+                <strong>¡Muy importante!</strong> Una vez que confirmemos tu pago (verificación manual por los Scouts, la cual <strong>no es instantánea</strong> y puede demorar unas horas), te llegará un mail con <strong>un código QR por cada asistente</strong>.
               </li>
               <li>Cada persona deberá mostrar su código QR desde su celular al ingresar al evento para registrar la entrada.</li>
             </ol>
@@ -423,6 +425,11 @@ export default function CheckoutPage() {
                 ⚠ {error}
               </div>
             )}
+
+            {/* Delay Warning Callout */}
+            <p className="text-[11px] text-amber-900 bg-amber-50 border border-amber-200 rounded-xl p-3 text-center leading-relaxed font-semibold">
+              📢 <strong>Nota importante:</strong> La acreditación del pago es verificada de forma manual por los Scouts. El envío de las entradas <strong>no es inmediato</strong> y puede demorar unas horas. ¡Quedate tranquilo que tu pedido queda registrado ni bien lo envías!
+            </p>
 
             {/* Submit Button */}
             <button
