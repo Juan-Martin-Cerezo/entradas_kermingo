@@ -86,7 +86,7 @@ export async function POST(req: Request) {
       const [purchase] = await tx.$queryRaw<any[]>`
         SELECT id, payment_status, buyer_email, quantity, attendee_names 
         FROM "Purchase" 
-        WHERE id = ${purchaseId}::uuid 
+        WHERE id = ${purchaseId} 
         FOR UPDATE
       `;
 
