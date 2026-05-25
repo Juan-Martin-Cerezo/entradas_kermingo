@@ -108,6 +108,12 @@ export default function CheckoutPage() {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError('Por favor ingresa un correo electrónico válido.');
+      return;
+    }
+
     if (names.some((n) => !n.trim())) {
       setError('Por favor ingresa los nombres de todos los asistentes.');
       return;
@@ -165,7 +171,7 @@ export default function CheckoutPage() {
           <p className="mb-6 text-slate-600 text-sm leading-relaxed">
             Tu comprobante de transferencia fue cargado correctamente. 
             <br /><br />
-            <strong>⚠️ Recordá:</strong> La verificación del pago se realiza de manera <strong>manual</strong> por nuestro equipo de Scouts, por lo que la confirmación <strong>no es instantánea</strong> y puede demorar unas horas. Te enviaremos las entradas con sus correspondientes códigos QR a <strong>{email}</strong> una vez aprobado. ¡No te desesperes, tu lugar ya está guardado!
+            <strong>⚠️ Recordá:</strong> La verificación del pago se realiza de manera <strong>manual</strong>, por lo que la confirmación <strong>no es instantánea</strong> y puede demorar unas horas. Te enviaremos las entradas con sus correspondientes códigos QR a <strong>{email}</strong> una vez aprobado.
           </p>
           <div className="rounded-xl bg-[#74ACDF]/10 p-4 border border-[#74ACDF]/30 mb-6 text-left">
             <h4 className="font-semibold text-slate-800 mb-1">Resumen del Pedido:</h4>
@@ -347,7 +353,7 @@ export default function CheckoutPage() {
               <div className="mt-2 flex justify-center rounded-xl border-2 border-dashed border-slate-300 px-6 py-6 transition hover:border-[#74ACDF] bg-slate-50/50">
                 <div className="text-center">
                   <span className="mx-auto block text-3xl mb-2">📸</span>
-                  <div className="flex text-sm text-slate-600">
+                  <div className="flex flex-wrap justify-center items-center text-sm text-slate-600 gap-1">
                     <label
                       htmlFor="file-upload"
                       className="relative cursor-pointer rounded-md font-semibold text-[#74ACDF] focus-within:outline-none hover:text-[#5490c4]"
@@ -399,10 +405,10 @@ export default function CheckoutPage() {
                         }}
                       />
                     </label>
-                    <p className="pl-1 text-slate-500">o arrastrar y soltar</p>
+                    <p className="text-slate-500">o arrastrar y soltar</p>
                   </div>
                   <p className="text-xs text-slate-400 mt-1">
-                    Formatos: PNG, JPG (hasta 15MB, se comprimen automáticamente) o PDF (hasta 4MB).
+                    Formatos: PNG, JPG (hasta 15MB) o PDF (hasta 4MB).
                   </p>
                   {loadingCompress && (
                     <div className="mt-3 text-xs font-bold text-[#74ACDF] animate-pulse">
@@ -428,7 +434,7 @@ export default function CheckoutPage() {
 
             {/* Delay Warning Callout */}
             <p className="text-[11px] text-amber-900 bg-amber-50 border border-amber-200 rounded-xl p-3 text-center leading-relaxed font-semibold">
-              📢 <strong>Nota importante:</strong> La acreditación del pago es verificada de forma manual por los Scouts. El envío de las entradas <strong>no es inmediato</strong> y puede demorar unas horas. ¡Quedate tranquilo que tu pedido queda registrado ni bien lo envías!
+              📢 <strong>Nota importante:</strong> La acreditación del pago es verificada de forma manual por los Scouts. El envío de las entradas <strong>no es inmediato</strong> y puede demorar unas horas.
             </p>
 
             {/* Submit Button */}
