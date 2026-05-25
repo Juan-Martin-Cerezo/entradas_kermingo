@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Kermingo 2026 — Entradas",
   description:
-    "Comprá tus entradas para Kermingo 2026, el evento scout rumbo a la Copa del Mundo. Kermesse, fútbol y más.",
+    "Comprá tus entradas para Kermingo 2026, el evento scout rumbo a la Copa del Mundo. Kermesse, bingo y más.",
   keywords: ["kermingo", "kermesse", "scout", "entradas", "2026", "argentina"],
 };
 
