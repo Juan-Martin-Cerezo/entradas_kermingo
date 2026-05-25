@@ -189,19 +189,19 @@ export default function EscanerPage() {
   return (
     <div className="flex min-h-screen flex-col bg-slate-900 text-white">
       {/* Admin Navbar */}
-      <nav className="border-b-4 border-[#D4AF37] bg-[#74ACDF] px-6 py-4 text-white shadow-md">
-        <div className="mx-auto flex max-w-xl items-center justify-between">
-          <Link href="/admin" className="text-lg font-black tracking-wider flex items-center gap-1">
+      <nav className="border-b-4 border-[#D4AF37] bg-[#74ACDF] px-4 py-4 text-white shadow-md">
+        <div className="mx-auto flex max-w-xl flex-wrap items-center justify-between gap-3">
+          <Link href="/admin" className="text-base sm:text-lg font-black tracking-wider flex items-center gap-1 whitespace-nowrap">
             <span>🏆</span> KERMINGO 2026
           </Link>
-          <div className="flex gap-4">
-            <Link href="/admin" className="text-sm font-bold bg-white/20 px-3 py-1.5 rounded-lg hover:bg-white/30 transition">
+          <div className="flex flex-wrap gap-1.5">
+            <Link href="/admin" className="text-xs sm:text-sm font-bold bg-white/20 px-2.5 py-1.5 rounded-lg hover:bg-white/30 transition whitespace-nowrap">
               Panel
             </Link>
-            <Link href="/admin/asistentes" className="text-sm font-bold bg-white/20 px-3 py-1.5 rounded-lg hover:bg-white/30 transition">
+            <Link href="/admin/asistentes" className="text-xs sm:text-sm font-bold bg-white/20 px-2.5 py-1.5 rounded-lg hover:bg-white/30 transition whitespace-nowrap">
               Planilla
             </Link>
-            <Link href="/" className="text-sm font-bold bg-white/20 px-3 py-1.5 rounded-lg hover:bg-white/30 transition">
+            <Link href="/" className="text-xs sm:text-sm font-bold bg-white/20 px-2.5 py-1.5 rounded-lg hover:bg-white/30 transition whitespace-nowrap">
               Comprar
             </Link>
           </div>

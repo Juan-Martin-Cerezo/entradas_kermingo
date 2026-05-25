@@ -99,23 +99,23 @@ export default function ReferidosPage() {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800">
       {/* Navigation */}
-      <nav className="border-b-4 border-[#D4AF37] bg-[#74ACDF] px-6 py-4 text-white shadow-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <Link href="/admin" className="text-xl font-black tracking-wider">
+      <nav className="border-b-4 border-[#D4AF37] bg-[#74ACDF] px-4 py-4 text-white shadow-md">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+          <Link href="/admin" className="text-lg sm:text-xl font-black tracking-wider whitespace-nowrap">
             🏆 KERMINGO 2026 ADMIN
           </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/admin" className="rounded-lg bg-white/20 px-4 py-2 text-sm font-bold hover:bg-white/30 transition">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/admin" className="rounded-lg bg-white/20 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-white/30 transition whitespace-nowrap">
               ⏳ Aprobaciones
             </Link>
-            <Link href="/admin/asistentes" className="rounded-lg bg-white/20 px-4 py-2 text-sm font-bold hover:bg-white/30 transition">
+            <Link href="/admin/asistentes" className="rounded-lg bg-white/20 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-white/30 transition whitespace-nowrap">
               📋 Planilla
             </Link>
-            <Link href="/escaner" className="rounded-lg bg-white/20 px-4 py-2 text-sm font-bold hover:bg-white/30 transition">
+            <Link href="/escaner" className="rounded-lg bg-white/20 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-white/30 transition whitespace-nowrap">
               📷 Escanear QR
             </Link>
-            <button onClick={handleLogout} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold hover:bg-red-700 transition">
-              Cerrar Sesión
+            <button onClick={handleLogout} className="rounded-lg bg-red-650 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-red-700 transition whitespace-nowrap">
+              Cerrar
             </button>
           </div>
         </div>
