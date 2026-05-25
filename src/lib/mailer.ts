@@ -104,7 +104,7 @@ export async function sendTicketsEmail(buyerEmail: string, tickets: TicketInfo[]
   return transporter.sendMail(mailOptions);
 }
 
-export async function sendRejectionEmail(buyerEmail: string, quantity: number) {
+export async function sendRejectionEmail(buyerEmail: string, quantity: number, siteUrl: string) {
   const fromEmail = process.env.SMTP_FROM || '"Kermingo 2026" <noreply@kermingo.com>';
 
   const htmlContent = `
@@ -138,11 +138,17 @@ export async function sendRejectionEmail(buyerEmail: string, quantity: number) {
                 ¿Cómo proceder?
               </p>
               <p style="font-size: 0.95rem; line-height: 1.4; margin: 0 0 20px 0; font-family: sans-serif; color: #666666;">
-                Por favor, ponete en contacto con nosotros vía WhatsApp para verificar los datos de la transferencia o realizar el pedido de nuevo.
+                Podés volver a realizar tu pedido de entradas desde nuestra página web, o bien ponerte en contacto con nosotros vía WhatsApp para verificar los datos de la transferencia.
               </p>
-              <a href="https://wa.me/541171540510" style="display: inline-block; background-color: #25D366; color: #ffffff; text-decoration: none; padding: 12px 24px; font-weight: bold; border-radius: 8px; font-family: sans-serif; font-size: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                💬 Contactar por WhatsApp
-              </a>
+              <div style="margin: 15px 0; text-align: center;">
+                <a href="${siteUrl}" style="display: inline-block; background-color: #74ACDF; color: #ffffff; text-decoration: none; padding: 12px 24px; font-weight: bold; border-radius: 8px; font-family: sans-serif; font-size: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 12px; width: 220px;">
+                  🎟️ Volver a Pedir Entradas
+                </a>
+                <br />
+                <a href="https://wa.me/541171540510" style="display: inline-block; background-color: #25D366; color: #ffffff; text-decoration: none; padding: 12px 24px; font-weight: bold; border-radius: 8px; font-family: sans-serif; font-size: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 220px;">
+                  💬 Contactar por WhatsApp
+                </a>
+              </div>
             </div>
             
             <p style="font-size: 0.9rem; line-height: 1.4; color: #666666; font-family: sans-serif; text-align: center; border-top: 1px solid #eeeeee; padding-top: 20px; margin-top: 30px;">

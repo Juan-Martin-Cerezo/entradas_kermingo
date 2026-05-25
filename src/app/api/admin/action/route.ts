@@ -41,12 +41,15 @@ export async function POST(req: Request) {
         data: { payment_status: 'REJECTED' },
       });
 
+      const requestUrl = new URL(req.url);
+      const siteUrl = `${requestUrl.protocol}//${requestUrl.host}`;
+
       // Send rejection email
       try {
         if (!process.env.SMTP_USER || process.env.SMTP_USER.includes('placeholder')) {
           throw new Error('Las credenciales SMTP (correo) siguen en valores de marcador de posición (placeholder) en tu archivo .env.');
         }
-        await sendRejectionEmail(updatedPurchase.buyer_email, updatedPurchase.quantity);
+        await sendRejectionEmail(updatedPurchase.buyer_email, updatedPurchase.quantity, siteUrl);
       } catch (mailError: any) {
         console.error('Rejection Mailer execution warning:', mailError);
         return NextResponse.json({
