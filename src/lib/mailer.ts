@@ -128,31 +128,41 @@ export async function sendRejectionEmail(buyerEmail: string, quantity: number, s
           
           <!-- Content -->
           <div style="padding: 30px 20px;">
-            <h2 style="color: #d9534f; font-family: sans-serif; margin-top: 0;">Detalles de tu compra</h2>
-            <p style="font-size: 1rem; line-height: 1.5; color: #555555; font-family: sans-serif;">
-              Hola. Te informamos que no hemos podido verificar el comprobante de transferencia correspondiente a tu pedido de <strong>${quantity} ${quantity === 1 ? 'entrada' : 'entradas'}</strong>. Por este motivo, el estado de tu compra ha sido marcado como <strong>Rechazado</strong>.
+            <h2 style="color: #d9534f; font-family: sans-serif; margin-top: 0; font-size: 1.4rem;">Novedades sobre tu pedido</h2>
+            <p style="font-size: 0.95rem; line-height: 1.5; color: #555555; font-family: sans-serif;">
+              Te informamos que no hemos podido verificar el pago de tu pedido de <strong>${quantity} ${quantity === 1 ? 'entrada' : 'entradas'}</strong>. Por este motivo, la solicitud ha sido rechazada.
             </p>
             
-            <div style="border: 3px solid #ff8080; background-color: #fff8f8; padding: 20px; margin: 20px 0; border-radius: 12px; text-align: center;">
-              <p style="font-size: 1.1rem; font-weight: bold; margin: 0 0 15px 0; font-family: sans-serif; color: #333333;">
-                ¿Cómo proceder?
-              </p>
-              <p style="font-size: 0.95rem; line-height: 1.4; margin: 0 0 20px 0; font-family: sans-serif; color: #666666;">
-                Podés volver a realizar tu pedido de entradas desde nuestra página web, o bien ponerte en contacto con nosotros vía WhatsApp para verificar los datos de la transferencia.
-              </p>
-              <div style="margin: 15px 0; text-align: center;">
-                <a href="${siteUrl}" style="display: inline-block; background-color: #74ACDF; color: #ffffff; text-decoration: none; padding: 12px 24px; font-weight: bold; border-radius: 8px; font-family: sans-serif; font-size: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 12px; width: 220px;">
-                  🎟️ Volver a Pedir Entradas
-                </a>
-                <br />
-                <a href="https://wa.me/541171540510" style="display: inline-block; background-color: #25D366; color: #ffffff; text-decoration: none; padding: 12px 24px; font-weight: bold; border-radius: 8px; font-family: sans-serif; font-size: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 220px;">
-                  💬 Contactar por WhatsApp
-                </a>
+            <div style="margin: 25px 0; font-family: sans-serif;">
+              <!-- Option A: Didn't pay -->
+              <div style="border-left: 4px solid #74ACDF; background-color: #f3f8fc; padding: 15px 20px; margin-bottom: 15px; border-radius: 0 12px 12px 0; text-align: left;">
+                <h4 style="color: #437fb2; margin: 0 0 5px 0; font-size: 0.95rem; font-weight: bold;">Opción A: Completaste el formulario pero no realizaste el pago</h4>
+                <p style="font-size: 0.85rem; line-height: 1.4; margin: 0 0 12px 0; color: #666666;">
+                  Si llenaste el registro pero finalmente no hiciste la transferencia bancaria, podés volver a iniciar el proceso y generar un nuevo pedido.
+                </p>
+                <div style="text-align: left;">
+                  <a href="${siteUrl}" style="display: inline-block; background-color: #74ACDF; color: #ffffff; text-decoration: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; font-size: 0.85rem; box-shadow: 0 2px 4px rgba(0,0,0,0.08);">
+                    🎟️ Hacer un nuevo pedido
+                  </a>
+                </div>
+              </div>
+              
+              <!-- Option B: Paid but rejected -->
+              <div style="border-left: 4px solid #25D366; background-color: #f2fbf5; padding: 15px 20px; border-radius: 0 12px 12px 0; text-align: left;">
+                <h4 style="color: #1e7e34; margin: 0 0 5px 0; font-size: 0.95rem; font-weight: bold;">Opción B: Sí realizaste la transferencia</h4>
+                <p style="font-size: 0.85rem; line-height: 1.4; margin: 0 0 12px 0; color: #666666;">
+                  Si transferiste el dinero y creés que hubo un error en nuestra verificación, ponete en contacto directo con nosotros por WhatsApp para solucionarlo y emitir tus entradas de forma manual.
+                </p>
+                <div style="text-align: left;">
+                  <a href="https://wa.me/541171540510" style="display: inline-block; background-color: #25D366; color: #ffffff; text-decoration: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; font-size: 0.85rem; box-shadow: 0 2px 4px rgba(0,0,0,0.08);">
+                    💬 Hablar por WhatsApp
+                  </a>
+                </div>
               </div>
             </div>
             
-            <p style="font-size: 0.9rem; line-height: 1.4; color: #666666; font-family: sans-serif; text-align: center; border-top: 1px solid #eeeeee; padding-top: 20px; margin-top: 30px;">
-              Si creés que esto es un error, por favor tené a mano tu comprobante original al comunicarte.
+            <p style="font-size: 0.85rem; line-height: 1.4; color: #888888; font-family: sans-serif; text-align: center; border-top: 1px solid #eeeeee; padding-top: 15px; margin-top: 25px;">
+              Por favor, tené a mano tu comprobante de transferencia al comunicarte.
             </p>
           </div>
           
