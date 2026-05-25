@@ -12,9 +12,9 @@ const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:post
 if (process.env.NODE_ENV === 'production') {
   const pool = new pg.Pool({
     connectionString,
-    max: 1, // Only 1 connection per serverless instance to prevent connection exhaustion
-    idleTimeoutMillis: 1000, // Terminate idle connections quickly
-    connectionTimeoutMillis: 5000, // Fail fast rather than hanging the route handler
+    max: 4, // Allow up to 4 concurrent connections per serverless container to handle parallel queries
+    idleTimeoutMillis: 15000, // Keep idle connections alive for 15s to optimize subsequent page loads
+    connectionTimeoutMillis: 30000, // 30s timeout to ensure Neon has enough time to wake up from auto-suspension (cold start)
   });
   const adapter = new PrismaPg(pool);
   db = new PrismaClient({ adapter });
@@ -22,8 +22,9 @@ if (process.env.NODE_ENV === 'production') {
   if (!globalForPrisma.prisma) {
     const pool = new pg.Pool({
       connectionString,
-      max: 2, // Limit local pool sizes
-      idleTimeoutMillis: 1000,
+      max: 10, // Increase local pool limit
+      idleTimeoutMillis: 30000, // Keep connections warm
+      connectionTimeoutMillis: 30000, // 30s timeout to allow Neon to wake up
     });
     const adapter = new PrismaPg(pool);
     globalForPrisma.prisma = new PrismaClient({
