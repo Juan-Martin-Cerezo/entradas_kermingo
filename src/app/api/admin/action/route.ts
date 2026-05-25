@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import QRCode from 'qrcode';
-import { sendTicketsEmail } from '@/lib/mailer';
+import { sendTicketsEmail, sendRejectionEmail } from '@/lib/mailer';
 
 export async function POST(req: Request) {
   try {
@@ -36,10 +36,25 @@ export async function POST(req: Request) {
     }
 
     if (action === 'REJECT') {
-      await db.purchase.update({
+      const updatedPurchase = await db.purchase.update({
         where: { id: purchaseId },
         data: { payment_status: 'REJECTED' },
       });
+
+      // Send rejection email
+      try {
+        if (!process.env.SMTP_USER || process.env.SMTP_USER.includes('placeholder')) {
+          throw new Error('Las credenciales SMTP (correo) siguen en valores de marcador de posición (placeholder) en tu archivo .env.');
+        }
+        await sendRejectionEmail(updatedPurchase.buyer_email, updatedPurchase.quantity);
+      } catch (mailError: any) {
+        console.error('Rejection Mailer execution warning:', mailError);
+        return NextResponse.json({
+          success: true,
+          warning: `¡Compra rechazada con éxito! Sin embargo, el email de rechazo no pudo ser enviado: ${mailError.message || mailError}`,
+        });
+      }
+
       return NextResponse.json({ success: true });
     }
 

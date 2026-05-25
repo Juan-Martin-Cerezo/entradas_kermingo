@@ -103,3 +103,70 @@ export async function sendTicketsEmail(buyerEmail: string, tickets: TicketInfo[]
 
   return transporter.sendMail(mailOptions);
 }
+
+export async function sendRejectionEmail(buyerEmail: string, quantity: number) {
+  const fromEmail = process.env.SMTP_FROM || '"Kermingo 2026" <noreply@kermingo.com>';
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Novedades sobre tus Entradas - Kermingo 2026</title>
+      </head>
+      <body style="background-color: #fcf3f3; margin: 0; padding: 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333333;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 2px solid #ff8080;">
+          <!-- Header -->
+          <div style="background-color: #ff8080; background-image: linear-gradient(135deg, #ff8080 0%, #ffb3b3 100%); padding: 30px 20px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 1.8rem; letter-spacing: 1px; font-family: sans-serif; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">
+              ⚽ ¡KERMINGO 2026! ⚽
+            </h1>
+            <p style="color: #ffffff; margin: 5px 0 0 0; font-size: 1rem; font-family: sans-serif; opacity: 0.9;">
+              Novedades sobre tu pedido
+            </p>
+          </div>
+          
+          <!-- Content -->
+          <div style="padding: 30px 20px;">
+            <h2 style="color: #d9534f; font-family: sans-serif; margin-top: 0;">Detalles de tu compra</h2>
+            <p style="font-size: 1rem; line-height: 1.5; color: #555555; font-family: sans-serif;">
+              Hola. Te informamos que no hemos podido verificar el comprobante de transferencia correspondiente a tu pedido de <strong>${quantity} ${quantity === 1 ? 'entrada' : 'entradas'}</strong>. Por este motivo, el estado de tu compra ha sido marcado como <strong>Rechazado</strong>.
+            </p>
+            
+            <div style="border: 3px solid #ff8080; background-color: #fff8f8; padding: 20px; margin: 20px 0; border-radius: 12px; text-align: center;">
+              <p style="font-size: 1.1rem; font-weight: bold; margin: 0 0 15px 0; font-family: sans-serif; color: #333333;">
+                ¿Cómo proceder?
+              </p>
+              <p style="font-size: 0.95rem; line-height: 1.4; margin: 0 0 20px 0; font-family: sans-serif; color: #666666;">
+                Por favor, ponete en contacto con nosotros vía WhatsApp para verificar los datos de la transferencia o realizar el pedido de nuevo.
+              </p>
+              <a href="https://wa.me/541171540510" style="display: inline-block; background-color: #25D366; color: #ffffff; text-decoration: none; padding: 12px 24px; font-weight: bold; border-radius: 8px; font-family: sans-serif; font-size: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                💬 Contactar por WhatsApp
+              </a>
+            </div>
+            
+            <p style="font-size: 0.9rem; line-height: 1.4; color: #666666; font-family: sans-serif; text-align: center; border-top: 1px solid #eeeeee; padding-top: 20px; margin-top: 30px;">
+              Si creés que esto es un error, por favor tené a mano tu comprobante original al comunicarte.
+            </p>
+          </div>
+          
+          <!-- Footer -->
+          <div style="background-color: #fcf8f8; padding: 15px; text-align: center; border-top: 1px solid #eeeeee;">
+            <p style="margin: 0; font-size: 0.8rem; color: #aaaaaa; font-family: sans-serif;">
+              Kermingo 2026
+            </p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const mailOptions = {
+    from: fromEmail,
+    to: buyerEmail,
+    subject: '⚽ Compra de Entradas Rechazada - Kermingo 2026 🇦🇷',
+    html: htmlContent,
+  };
+
+  return transporter.sendMail(mailOptions);
+}
