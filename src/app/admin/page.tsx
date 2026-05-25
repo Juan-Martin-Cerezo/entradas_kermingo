@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { TICKET_PRICE } from '@/lib/constants';
 
 interface Promoter {
+  id: string;
   name: string;
   referral_code: string;
 }
@@ -11,11 +13,11 @@ interface Promoter {
 interface Purchase {
   id: string;
   buyer_email: string;
-  receipt_url: string;
   quantity: number;
   payment_status: string;
   attendee_names: string;
   promoter?: Promoter | null;
+  email_sent: boolean;
   createdAt: string;
 }
 
@@ -40,17 +42,9 @@ export default function AdminDashboard() {
   const [selectedReceipt, setSelectedReceipt] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
 
-  useEffect(() => {
-    const savedPassword = localStorage.getItem('kermingo_admin_pass');
-    if (savedPassword) {
-      setPassword(savedPassword);
-      verifyAndFetch(savedPassword);
-    }
-  }, []);
-
-  const fetchStats = async (passToVerify: string) => {
+  const fetchStats = async () => {
     try {
-      const res = await fetch(`/api/admin/stats?password=${encodeURIComponent(passToVerify)}`);
+      const res = await fetch('/api/admin/stats');
       if (res.ok) {
         const data = await res.json();
         setStats(data);
@@ -60,34 +54,53 @@ export default function AdminDashboard() {
     }
   };
 
-  const verifyAndFetch = async (passToVerify: string) => {
+  const verifyAndFetch = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/purchases?password=${encodeURIComponent(passToVerify)}`);
+      const res = await fetch('/api/admin/purchases');
       if (!res.ok) {
-        throw new Error('Contraseña incorrecta o error de servidor.');
+        throw new Error('No autorizado.');
       }
       const data = await res.json();
       setPurchases(data);
       setIsAuthorized(true);
-      localStorage.setItem('kermingo_admin_pass', passToVerify);
-      await fetchStats(passToVerify);
+      await fetchStats();
     } catch (err: any) {
-      setError(err.message || 'Error de autenticación.');
       setIsAuthorized(false);
-      localStorage.removeItem('kermingo_admin_pass');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    verifyAndFetch();
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    verifyAndFetch(password);
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Contraseña incorrecta.');
+      }
+      await verifyAndFetch();
+    } catch (err: any) {
+      setError(err.message || 'Error de autenticación.');
+      setIsAuthorized(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAction = async (purchaseId: string, action: 'APPROVE' | 'REJECT' | 'DELETE') => {
+  const handleAction = async (purchaseId: string, action: 'APPROVE' | 'REJECT' | 'DELETE' | 'RESEND_EMAIL') => {
     if (action === 'DELETE' && !confirm('¿Estás seguro de que deseas eliminar esta compra? Esto borrará también todas sus entradas y códigos QR asociados.')) {
       return;
     }
@@ -98,7 +111,7 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ purchaseId, action, password }),
+        body: JSON.stringify({ purchaseId, action }),
       });
 
       let data: any = null;
@@ -122,26 +135,62 @@ export default function AdminDashboard() {
       // Update state local list
       if (action === 'DELETE') {
         setPurchases((prev) => prev.filter((p) => p.id !== purchaseId));
+      } else if (action === 'RESEND_EMAIL') {
+        setPurchases((prev) =>
+          prev.map((p) =>
+            p.id === purchaseId
+              ? { ...p, email_sent: true }
+              : p
+          )
+        );
+        alert('Email reenviado correctamente.');
       } else {
         // Update local status so it moves to respective tab
         setPurchases((prev) =>
           prev.map((p) =>
             p.id === purchaseId
-              ? { ...p, payment_status: action === 'APPROVE' ? 'APPROVED' : 'REJECTED' }
+              ? { ...p, payment_status: action === 'APPROVE' ? 'APPROVED' : 'REJECTED', email_sent: action === 'APPROVE' }
               : p
           )
         );
       }
-      await fetchStats(password);
+      await fetchStats();
     } catch (err: any) {
       setError(err.message || 'Error al procesar la acción.');
+      // If action failed but update occurred (e.g. resend failed) update local status
+      if (action === 'RESEND_EMAIL') {
+        setPurchases((prev) =>
+          prev.map((p) =>
+            p.id === purchaseId
+              ? { ...p, email_sent: false }
+              : p
+          )
+        );
+      }
     } finally {
       setActionLoadingId(null);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('kermingo_admin_pass');
+  const viewReceipt = async (purchaseId: string) => {
+    try {
+      const res = await fetch(`/api/admin/purchases/receipt?id=${purchaseId}`);
+      if (!res.ok) {
+        throw new Error('No se pudo cargar el comprobante.');
+      }
+      const data = await res.json();
+      setSelectedReceipt(data.receipt_url);
+    } catch (err: any) {
+      alert(err.message || 'Error al cargar el comprobante.');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' });
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
     setPassword('');
     setIsAuthorized(false);
     setPurchases([]);
@@ -202,7 +251,7 @@ export default function AdminDashboard() {
             <Link href="/escaner" className="rounded-lg bg-white/20 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-white/30 transition whitespace-nowrap">
               📷 Escanear QR
             </Link>
-            <button onClick={handleLogout} className="rounded-lg bg-red-650 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-red-700 transition whitespace-nowrap">
+            <button onClick={handleLogout} className="rounded-lg bg-red-600 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-red-700 transition whitespace-nowrap cursor-pointer">
               Cerrar
             </button>
           </div>
@@ -246,7 +295,7 @@ export default function AdminDashboard() {
         <div className="mb-6 flex border-b border-slate-200 overflow-x-auto whitespace-nowrap">
           <button
             onClick={() => setActiveTab('PENDING')}
-            className={`px-6 py-2.5 font-bold text-sm border-b-4 transition ${
+            className={`px-6 py-2.5 font-bold text-sm border-b-4 transition cursor-pointer ${
               activeTab === 'PENDING'
                 ? 'border-[#74ACDF] text-[#437fb2]'
                 : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -256,7 +305,7 @@ export default function AdminDashboard() {
           </button>
           <button
             onClick={() => setActiveTab('APPROVED')}
-            className={`px-6 py-2.5 font-bold text-sm border-b-4 transition ${
+            className={`px-6 py-2.5 font-bold text-sm border-b-4 transition cursor-pointer ${
               activeTab === 'APPROVED'
                 ? 'border-green-500 text-green-600'
                 : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -266,7 +315,7 @@ export default function AdminDashboard() {
           </button>
           <button
             onClick={() => setActiveTab('REJECTED')}
-            className={`px-6 py-2.5 font-bold text-sm border-b-4 transition ${
+            className={`px-6 py-2.5 font-bold text-sm border-b-4 transition cursor-pointer ${
               activeTab === 'REJECTED'
                 ? 'border-red-500 text-red-600'
                 : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -311,7 +360,7 @@ export default function AdminDashboard() {
                   <button
                     onClick={() => handleAction(purchase.id, 'DELETE')}
                     disabled={actionLoadingId === purchase.id + '_DELETE'}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition cursor-pointer"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-550 p-1.5 rounded-lg transition cursor-pointer"
                     title="Eliminar registro"
                   >
                     🗑️
@@ -345,7 +394,7 @@ export default function AdminDashboard() {
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500">Total pagado:</span>
                     <span className="font-extrabold text-[#D4AF37]">
-                      ${(purchase.quantity * 5500).toLocaleString('es-AR')}
+                      ${(purchase.quantity * TICKET_PRICE).toLocaleString('es-AR')}
                     </span>
                   </div>
 
@@ -360,7 +409,7 @@ export default function AdminDashboard() {
                   
                   {/* View Receipt Button */}
                   <button
-                    onClick={() => setSelectedReceipt(purchase.receipt_url)}
+                    onClick={() => viewReceipt(purchase.id)}
                     className="w-full rounded-lg border border-[#74ACDF] bg-white py-2 text-sm font-bold text-[#74ACDF] hover:bg-[#74ACDF]/5 transition cursor-pointer"
                   >
                     🔍 Ver Comprobante
@@ -391,9 +440,24 @@ export default function AdminDashboard() {
                   </div>
                 )}
 
-                {purchase.payment_status !== 'PENDING' && (
-                  <div className="border-t border-slate-100 p-2 bg-slate-50 text-center text-xs font-semibold text-slate-500">
-                    Estado: {purchase.payment_status === 'APPROVED' ? '🟢 APROBADO' : '🔴 RECHAZADO'}
+                {purchase.payment_status === 'APPROVED' && (
+                  <div className="border-t border-slate-100 p-2 bg-slate-50 flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-slate-500">
+                      Email: {purchase.email_sent ? '🟢 Enviado' : '🔴 Falló'}
+                    </span>
+                    <button
+                      onClick={() => handleAction(purchase.id, 'RESEND_EMAIL')}
+                      disabled={actionLoadingId === purchase.id + '_RESEND_EMAIL'}
+                      className="rounded-lg bg-[#74ACDF]/15 border border-[#74ACDF]/30 px-2.5 py-1.5 text-xs font-bold text-[#437fb2] hover:bg-[#74ACDF]/30 transition disabled:opacity-50 cursor-pointer"
+                    >
+                      {actionLoadingId === purchase.id + '_RESEND_EMAIL' ? 'Enviando...' : 'Reenviar ✉️'}
+                    </button>
+                  </div>
+                )}
+
+                {purchase.payment_status === 'REJECTED' && (
+                  <div className="border-t border-slate-100 p-2.5 bg-slate-50 text-center text-xs font-bold text-red-500">
+                    🔴 RECHAZADO
                   </div>
                 )}
               </div>

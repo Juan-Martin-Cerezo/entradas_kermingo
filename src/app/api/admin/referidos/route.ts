@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { checkAuth } from '@/lib/auth';
+import { REFERRAL_COMMISSION } from '@/lib/constants';
 
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const password = searchParams.get('password');
-
-    if (!password || password !== process.env.ADMIN_PASSWORD) {
+    const isAuthorized = await checkAuth();
+    if (!isAuthorized) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -14,13 +14,16 @@ export async function GET(req: Request) {
       include: {
         purchases: {
           where: { payment_status: 'APPROVED' },
+          select: {
+            quantity: true,
+          },
         },
       },
     });
 
     const report = promoters.map((p) => {
       const totalTickets = p.purchases.reduce((sum, purchase) => sum + purchase.quantity, 0);
-      const commission = totalTickets * 1000;
+      const commission = totalTickets * REFERRAL_COMMISSION;
       return {
         id: p.id,
         name: p.name,

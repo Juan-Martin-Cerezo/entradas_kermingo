@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { TICKET_PRICE, MAX_FILE_SIZE } from '@/lib/constants';
 
 const compressImage = (file: File, maxWidth = 1200, maxHeight = 1200, quality = 0.6): Promise<File> => {
   return new Promise((resolve, reject) => {
@@ -74,9 +75,9 @@ export default function CheckoutPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadingCompress, setLoadingCompress] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
 
-  const pricePerTicket = 5500;
-  const totalPrice = quantity * pricePerTicket;
+  const totalPrice = quantity * TICKET_PRICE;
 
   const handleQuantityChange = (newQty: number) => {
     setQuantity(newQty);
@@ -95,10 +96,74 @@ export default function CheckoutPage() {
 
   const handleNameChange = (index: number, val: string) => {
     setNames((prev) => {
+      if (typeof index !== 'number' || index < 0 || index >= prev.length) {
+        return prev;
+      }
       const updated = [...prev];
       updated[index] = val;
       return updated;
     });
+  };
+
+  const processFile = async (file: File) => {
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    if (!allowedMimeTypes.includes(file.type)) {
+      setError('Formato no soportado. Por favor, subí una imagen (PNG, JPG, WEBP) o un PDF.');
+      setReceipt(null);
+      return;
+    }
+
+    if (file.type === 'application/pdf') {
+      if (file.size > MAX_FILE_SIZE) {
+        setError('El comprobante en PDF es demasiado pesado (máximo 2MB). Por favor, subí un archivo más chico.');
+        setReceipt(null);
+      } else {
+        setError(null);
+        setReceipt(file);
+      }
+    } else if (file.type.startsWith('image/')) {
+      setError(null);
+      setLoadingCompress(true);
+      try {
+        const compressed = await compressImage(file);
+        if (compressed.size > MAX_FILE_SIZE) {
+          setError('La imagen es demasiado pesada incluso comprimida (máximo 2MB). Por favor, subí otra captura.');
+          setReceipt(null);
+        } else {
+          setReceipt(compressed);
+        }
+      } catch (err) {
+        console.error('Image compression failed', err);
+        if (file.size > MAX_FILE_SIZE) {
+          setError('La imagen es demasiado pesada (máximo 2MB). Por favor, subí una captura más chica.');
+          setReceipt(null);
+        } else {
+          setReceipt(file);
+        }
+      } finally {
+        setLoadingCompress(false);
+      }
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      processFile(file);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -146,9 +211,6 @@ export default function CheckoutPage() {
       }
 
       if (!res.ok) {
-        if (res.status === 413) {
-          throw new Error('El comprobante es demasiado pesado. Por favor, subí una captura de pantalla comprimida o un archivo menor a 4MB.');
-        }
         throw new Error(data?.error || 'Ocurrió un error al procesar tu compra.');
       }
 
@@ -195,7 +257,7 @@ export default function CheckoutPage() {
               setReferralCode('');
               setReceipt(null);
             }}
-            className="w-full rounded-xl bg-gradient-to-r from-[#74ACDF] to-[#5490c4] py-3 font-semibold text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
+            className="w-full rounded-xl bg-gradient-to-r from-[#74ACDF] to-[#5490c4] py-3 font-semibold text-white shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
           >
             Comprar más entradas
           </button>
@@ -235,7 +297,7 @@ export default function CheckoutPage() {
             </h3>
             <ol className="list-decimal list-inside space-y-2 text-slate-700 text-xs font-semibold">
               <li>Completás tus datos y los nombres de las personas que van a asistir.</li>
-              <li>Realizás la transferencia bancaria por el total de las entradas ($5.500 por cada una).</li>
+              <li>Realizás la transferencia bancaria por el total de las entradas (${TICKET_PRICE.toLocaleString('es-AR')} por cada una).</li>
               <li>Subís una foto o PDF del comprobante de transferencia bancaria.</li>
               <li>
                 <strong>¡Muy importante!</strong> Una vez que confirmemos tu pago (verificación manual por los Scouts, la cual <strong>no es instantánea</strong> y puede demorar unas horas), te llegará un mail con <strong>un código QR por cada asistente</strong>.
@@ -253,7 +315,7 @@ export default function CheckoutPage() {
             <p className="mb-1"><strong>Alias:</strong> kermingo.scout.2026</p>
             <p className="mb-1"><strong>CBU:</strong> 0000003100012345678901</p>
             <p className="mt-2 text-xs text-slate-500 font-semibold">
-              * El valor de la entrada anticipada es de <strong>$5.500 ARS</strong>. Transferí el total correspondiente y adjuntá el comprobante abajo.
+              * El valor de la entrada anticipada es de <strong>${TICKET_PRICE.toLocaleString('es-AR')} ARS</strong>. Transferí el total correspondiente y adjuntá el comprobante abajo.
             </p>
           </div>
 
@@ -350,7 +412,15 @@ export default function CheckoutPage() {
               <label htmlFor="receipt" className="block text-sm font-semibold text-slate-700">
                 Comprobante de Transferencia <span className="text-red-500">*</span>
               </label>
-              <div className="mt-2 flex justify-center rounded-xl border-2 border-dashed border-slate-300 px-6 py-6 transition hover:border-[#74ACDF] bg-slate-50/50">
+              <div 
+                onDragEnter={handleDrag}
+                onDragOver={handleDrag}
+                onDragLeave={handleDrag}
+                onDrop={handleDrop}
+                className={`mt-2 flex justify-center rounded-xl border-2 border-dashed px-6 py-6 transition bg-slate-50/50 ${
+                  dragActive ? 'border-[#74ACDF] bg-[#74ACDF]/5' : 'border-slate-300 hover:border-[#74ACDF]'
+                }`}
+              >
                 <div className="text-center">
                   <span className="mx-auto block text-3xl mb-2">📸</span>
                   <div className="flex flex-wrap justify-center items-center text-sm text-slate-600 gap-1">
@@ -366,41 +436,9 @@ export default function CheckoutPage() {
                         accept="image/*,application/pdf"
                         required
                         className="sr-only"
-                        onChange={async (e) => {
+                        onChange={(e) => {
                           if (e.target.files && e.target.files.length > 0) {
-                            const file = e.target.files[0];
-                            if (file.type === 'application/pdf') {
-                              if (file.size > 4 * 1024 * 1024) {
-                                setError('El comprobante en PDF es demasiado pesado (máximo 4MB). Por favor, subí un archivo más chico.');
-                                setReceipt(null);
-                                e.target.value = '';
-                              } else {
-                                setError(null);
-                                setReceipt(file);
-                              }
-                            } else if (file.type.startsWith('image/')) {
-                              if (file.size > 15 * 1024 * 1024) {
-                                setError('La imagen es demasiado pesada (máximo 15MB). Por favor, subí una captura de pantalla más chica.');
-                                setReceipt(null);
-                                e.target.value = '';
-                                return;
-                              }
-                              setError(null);
-                              setLoadingCompress(true);
-                              try {
-                                const compressed = await compressImage(file);
-                                setReceipt(compressed);
-                              } catch (err) {
-                                console.error('Image compression failed, using original file', err);
-                                setReceipt(file);
-                              } finally {
-                                setLoadingCompress(false);
-                              }
-                            } else {
-                              setError('Formato no soportado. Por favor, subí una imagen (PNG, JPG) o un PDF.');
-                              setReceipt(null);
-                              e.target.value = '';
-                            }
+                            processFile(e.target.files[0]);
                           }
                         }}
                       />
@@ -408,7 +446,7 @@ export default function CheckoutPage() {
                     <p className="text-slate-500">o arrastrar y soltar</p>
                   </div>
                   <p className="text-xs text-slate-400 mt-1">
-                    Formatos: PNG, JPG (hasta 15MB) o PDF (hasta 4MB).
+                    Formatos: PNG, JPG, WEBP o PDF (hasta 2MB).
                   </p>
                   {loadingCompress && (
                     <div className="mt-3 text-xs font-bold text-[#74ACDF] animate-pulse">

@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { checkAuth } from '@/lib/auth';
 
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const password = searchParams.get('password');
-
-    if (!password || password !== process.env.ADMIN_PASSWORD) {
+    const isAuthorized = await checkAuth();
+    if (!isAuthorized) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -18,8 +17,13 @@ export async function GET(req: Request) {
       },
       include: {
         purchase: {
-          include: {
-            promoter: true,
+          select: {
+            buyer_email: true,
+            promoter: {
+              select: {
+                name: true,
+              },
+            },
           },
         },
       },
@@ -46,11 +50,12 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { ticketId, action, password } = await req.json();
-
-    if (!password || password !== process.env.ADMIN_PASSWORD) {
+    const isAuthorized = await checkAuth();
+    if (!isAuthorized) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { ticketId, action } = await req.json();
 
     if (!ticketId || !['CHECKIN', 'RESET'].includes(action)) {
       return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 });

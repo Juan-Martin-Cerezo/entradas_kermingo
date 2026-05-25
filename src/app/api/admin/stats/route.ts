@@ -1,16 +1,21 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { checkAuth } from '@/lib/auth';
+import { TICKET_PRICE } from '@/lib/constants';
 
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const password = searchParams.get('password');
-
-    if (!password || password !== process.env.ADMIN_PASSWORD) {
+    const isAuthorized = await checkAuth();
+    if (!isAuthorized) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const purchases = await db.purchase.findMany();
+    const purchases = await db.purchase.findMany({
+      select: {
+        quantity: true,
+        payment_status: true,
+      },
+    });
 
     let approvedTickets = 0;
     let pendingTickets = 0;
@@ -32,7 +37,7 @@ export async function GET(req: Request) {
       }
     });
 
-    const totalEarnings = approvedTickets * 5500;
+    const totalEarnings = approvedTickets * TICKET_PRICE;
 
     return NextResponse.json({
       approvedTickets,

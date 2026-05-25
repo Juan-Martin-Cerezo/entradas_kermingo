@@ -6,13 +6,50 @@ export async function POST(req: Request) {
     const { ticketId } = await req.json();
 
     if (!ticketId) {
-      return NextResponse.json({ error: 'Ticket ID is required' }, { status: 400 });
+      return NextResponse.json({ error: 'El ID de la entrada es requerido.' }, { status: 400 });
     }
 
+    // Atomic conditional update to prevent race conditions (double check-in)
+    const updateResult = await db.ticket.updateMany({
+      where: {
+        id: ticketId,
+        entry_status: false,
+      },
+      data: {
+        entry_status: true,
+        entry_date: new Date(),
+      },
+    });
+
+    // If no row was updated, the ticket was either already checked in or doesn't exist
+    if (updateResult.count === 0) {
+      const ticket = await db.ticket.findUnique({
+        where: { id: ticketId },
+      });
+
+      if (!ticket) {
+        return NextResponse.json({ error: 'TICKET NOT FOUND' }, { status: 404 });
+      }
+
+      // Hide PII (holderName, buyerEmail) to prevent enumeration attacks
+      return NextResponse.json(
+        {
+          error: 'TICKET ALREADY USED',
+          entryDate: ticket.entry_date,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Load ticket details to display on successful check-in
     const ticket = await db.ticket.findUnique({
       where: { id: ticketId },
       include: {
-        purchase: true,
+        purchase: {
+          select: {
+            buyer_email: true,
+          },
+        },
       },
     });
 
@@ -20,39 +57,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'TICKET NOT FOUND' }, { status: 404 });
     }
 
-    if (ticket.entry_status) {
-      return NextResponse.json(
-        {
-          error: 'TICKET ALREADY USED',
-          entryDate: ticket.entry_date,
-          buyerEmail: ticket.purchase.buyer_email,
-          holderName: ticket.holder_name,
-        },
-        { status: 400 }
-      );
-    }
-
-    // Mark ticket as scanned/validated
-    const updatedTicket = await db.ticket.update({
-      where: { id: ticketId },
-      data: {
-        entry_status: true,
-        entry_date: new Date(),
-      },
-      include: {
-        purchase: true,
-      },
-    });
-
     return NextResponse.json({
       success: true,
-      buyerEmail: updatedTicket.purchase.buyer_email,
-      holderName: updatedTicket.holder_name,
-      ticketId: updatedTicket.id,
-      entryDate: updatedTicket.entry_date,
+      buyerEmail: ticket.purchase.buyer_email,
+      holderName: ticket.holder_name,
+      ticketId: ticket.id,
+      entryDate: ticket.entry_date,
     });
   } catch (error: any) {
     console.error('Ticket validation error:', error);
-    return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Ocurrió un error en el servidor al validar la entrada.' }, { status: 500 });
   }
 }

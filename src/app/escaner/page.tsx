@@ -20,8 +20,6 @@ interface ScanResult {
 
 export default function EscanerPage() {
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
-
-  const [password, setPassword] = useState('');
   const [offlineDb, setOfflineDb] = useState<any[] | null>(null);
   const [forceOffline, setForceOffline] = useState(false);
   const [pendingSync, setPendingSync] = useState<string[]>([]);
@@ -29,9 +27,6 @@ export default function EscanerPage() {
 
   // Load configuration from localStorage
   useEffect(() => {
-    const savedPassword = localStorage.getItem('kermingo_admin_pass') || '';
-    setPassword(savedPassword);
-
     const savedDb = localStorage.getItem('kermingo_offline_db');
     if (savedDb) {
       try {
@@ -52,23 +47,10 @@ export default function EscanerPage() {
   }, []);
 
   const downloadOfflineDb = async () => {
-    const passToUse = password || localStorage.getItem('kermingo_admin_pass') || '';
-    if (!passToUse) {
-      const inputPass = prompt('Ingresá la contraseña administrativa para descargar la base de datos:');
-      if (!inputPass) return;
-      setPassword(inputPass);
-      localStorage.setItem('kermingo_admin_pass', inputPass);
-      triggerDownload(inputPass);
-    } else {
-      triggerDownload(passToUse);
-    }
-  };
-
-  const triggerDownload = async (passToUse: string) => {
     try {
-      const res = await fetch(`/api/admin/asistentes?password=${encodeURIComponent(passToUse)}`);
+      const res = await fetch('/api/admin/asistentes');
       if (!res.ok) {
-        throw new Error('No autorizado o contraseña incorrecta.');
+        throw new Error('No autorizado. Por favor ingresá al panel admin primero.');
       }
       const data = await res.json();
       setOfflineDb(data);
@@ -130,18 +112,6 @@ export default function EscanerPage() {
     if (pendingSync.length === 0) return;
     setSyncing(true);
 
-    const passToUse = password || localStorage.getItem('kermingo_admin_pass') || '';
-    if (!passToUse) {
-      const inputPass = prompt('Ingresá la contraseña administrativa para sincronizar:');
-      if (!inputPass) {
-        setSyncing(false);
-        return;
-      }
-      setPassword(inputPass);
-      localStorage.setItem('kermingo_admin_pass', inputPass);
-    }
-
-    const activePass = password || localStorage.getItem('kermingo_admin_pass') || '';
     const successfulSyncs: string[] = [];
 
     try {
@@ -149,14 +119,14 @@ export default function EscanerPage() {
         const res = await fetch('/api/admin/asistentes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ticketId, action: 'CHECKIN', password: activePass }),
+          body: JSON.stringify({ ticketId, action: 'CHECKIN' }),
         });
 
         if (res.ok) {
           successfulSyncs.push(ticketId);
         } else {
           if (res.status === 401) {
-            throw new Error('Contraseña administrativa inválida.');
+            throw new Error('Sesión de administrador vencida. Por favor, logueate de vuelta en el panel.');
           }
         }
       }
@@ -321,7 +291,7 @@ export default function EscanerPage() {
 
                 <button
                   onClick={handleReset}
-                  className="w-full rounded-xl bg-emerald-500 py-4 font-extrabold text-white shadow-xl hover:bg-emerald-600 transition active:scale-95 text-lg"
+                  className="w-full rounded-xl bg-emerald-500 py-4 font-extrabold text-white shadow-xl hover:bg-emerald-600 transition active:scale-95 text-lg cursor-pointer"
                 >
                   Escanear Siguiente Entrada ⚽
                 </button>
@@ -356,7 +326,7 @@ export default function EscanerPage() {
 
                 <button
                   onClick={handleReset}
-                  className="w-full rounded-xl bg-red-500 py-4 font-extrabold text-white shadow-xl hover:bg-red-600 transition active:scale-95 text-lg"
+                  className="w-full rounded-xl bg-red-50 py-4 font-extrabold text-white shadow-xl hover:bg-red-600 transition active:scale-95 text-lg cursor-pointer"
                 >
                   Intentar Nuevamente 🔄
                 </button>

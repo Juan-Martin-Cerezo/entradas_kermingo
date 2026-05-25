@@ -15,6 +15,16 @@ interface TicketInfo {
   holderName: string;
 }
 
+function escapeHtml(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export async function sendTicketsEmail(buyerEmail: string, tickets: TicketInfo[]) {
   const fromEmail = process.env.SMTP_FROM || '"Kermingo 2026" <noreply@kermingo.com>';
 
@@ -24,7 +34,7 @@ export async function sendTicketsEmail(buyerEmail: string, tickets: TicketInfo[]
     <div style="border: 3px solid #74ACDF; background-color: #ffffff; padding: 20px; margin: 15px 0; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
       <h3 style="color: #74ACDF; margin-top: 0; font-family: sans-serif; font-size: 1.2rem;">🇦🇷 ENTRADA KERMINGO 2026 🇦🇷</h3>
       <p style="font-size: 1.1rem; font-weight: bold; margin: 5px 0; font-family: sans-serif; color: #333333;">
-        Titular: <span style="color: #D4AF37;">${ticket.holderName}</span>
+        Titular: <span style="color: #D4AF37;">${escapeHtml(ticket.holderName)}</span>
       </p>
       <p style="font-size: 0.9rem; margin: 2px 0; font-family: sans-serif; color: #666666;">Ticket #${index + 1} de ${tickets.length}</p>
       <div style="margin: 15px 0;">

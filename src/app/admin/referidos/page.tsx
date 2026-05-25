@@ -18,42 +18,57 @@ export default function ReferidosPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const savedPassword = localStorage.getItem('kermingo_admin_pass');
-    if (savedPassword) {
-      setPassword(savedPassword);
-      verifyAndFetch(savedPassword);
-    }
-  }, []);
-
-  const verifyAndFetch = async (passToVerify: string) => {
+  const verifyAndFetch = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/referidos?password=${encodeURIComponent(passToVerify)}`);
+      const res = await fetch('/api/admin/referidos');
       if (!res.ok) {
-        throw new Error('Contraseña incorrecta o error de servidor.');
+        throw new Error('No autorizado.');
       }
       const data = await res.json();
       setReport(data);
       setIsAuthorized(true);
-      localStorage.setItem('kermingo_admin_pass', passToVerify);
     } catch (err: any) {
-      setError(err.message || 'Error de autenticación.');
       setIsAuthorized(false);
-      localStorage.removeItem('kermingo_admin_pass');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    verifyAndFetch();
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    verifyAndFetch(password);
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Contraseña incorrecta.');
+      }
+      await verifyAndFetch();
+    } catch (err: any) {
+      setError(err.message || 'Error de autenticación.');
+      setIsAuthorized(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('kermingo_admin_pass');
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' });
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
     setPassword('');
     setIsAuthorized(false);
     setReport([]);
@@ -114,7 +129,7 @@ export default function ReferidosPage() {
             <Link href="/escaner" className="rounded-lg bg-white/20 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-white/30 transition whitespace-nowrap">
               📷 Escanear QR
             </Link>
-            <button onClick={handleLogout} className="rounded-lg bg-red-650 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-red-700 transition whitespace-nowrap">
+            <button onClick={handleLogout} className="rounded-lg bg-red-600 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-red-700 transition whitespace-nowrap cursor-pointer">
               Cerrar
             </button>
           </div>
@@ -132,75 +147,65 @@ export default function ReferidosPage() {
           </Link>
         </div>
 
-
-
+        {error && (
+          <div className="mb-6 rounded-xl bg-red-50 p-4 border border-red-200 font-bold text-red-600">
+            ⚠ {error}
+          </div>
+        )}
 
         {/* Overview Cards */}
         <div className="mb-8 grid gap-4 grid-cols-2">
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex justify-between items-center">
             <div>
-              <span className="text-slate-400 text-xs font-bold uppercase tracking-wider block sm:inline">Entradas Referidas</span>
-              <span className="block text-xl sm:text-3xl font-extrabold text-[#437fb2] mt-1">{totalTicketsReferred}</span>
+              <span className="text-slate-400 text-xs font-bold uppercase block">Entradas Referidas</span>
+              <span className="text-2xl font-extrabold text-[#74ACDF] mt-1">{totalTicketsReferred} 🎟️</span>
             </div>
-            <span className="text-3xl">⚽</span>
           </div>
-          <div className="rounded-2xl border-4 border-[#D4AF37] bg-white p-6 shadow-md flex justify-between items-center">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex justify-between items-center">
             <div>
-              <span className="text-slate-400 text-xs font-bold uppercase tracking-wider block sm:inline">Comisiones Totales</span>
-              <span className="block text-xl sm:text-3xl font-extrabold text-[#D4AF37] mt-1">
-                ${totalCommissions.toLocaleString('es-AR')}
-              </span>
+              <span className="text-slate-400 text-xs font-bold uppercase block">Total Comisión a Pagar</span>
+              <span className="text-2xl font-extrabold text-emerald-600 mt-1">${totalCommissions.toLocaleString('es-AR')}</span>
             </div>
-            <span className="text-3xl">🏆</span>
           </div>
         </div>
 
-        {error && (
-          <div className="mb-6 rounded-xl bg-red-50 p-4 border border-red-200 font-bold text-red-600">
-            ⚠ Error: {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex h-64 items-center justify-center">
-            <svg className="animate-spin h-8 w-8 text-[#74ACDF]" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-          </div>
-        ) : report.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white py-16 text-center shadow-sm">
-            <span className="text-5xl block mb-2">📊</span>
-            <p className="text-lg font-bold text-slate-600">No hay referidos registrados</p>
-            <p className="text-slate-400">Aún no se han aprobado compras referidas por ningún promotor.</p>
-          </div>
-        ) : (
-          /* Wrapped in overflow-x-auto to make table fully mobile-responsive */
-          <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-              <thead className="bg-[#74ACDF]/10">
-                <tr>
-                  <th className="px-6 py-4 font-bold text-slate-700 whitespace-nowrap">Scout (Referente)</th>
-                  <th className="px-6 py-4 font-bold text-slate-700 whitespace-nowrap">Identificador</th>
-                  <th className="px-6 py-4 font-bold text-slate-700 text-center whitespace-nowrap">Entradas Vendidas</th>
-                  <th className="px-6 py-4 font-bold text-[#D4AF37] text-right whitespace-nowrap">Comisión ($1000 c/u)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {report.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50 transition">
-                    <td className="px-6 py-4 font-semibold text-slate-800 whitespace-nowrap capitalize">{item.name}</td>
-                    <td className="px-6 py-4 font-mono text-slate-500 whitespace-nowrap">{item.referralCode}</td>
-                    <td className="px-6 py-4 text-center font-bold text-slate-700 whitespace-nowrap">{item.totalTickets}</td>
-                    <td className="px-6 py-4 text-right font-extrabold text-[#D4AF37] text-base whitespace-nowrap">
-                      ${item.commission.toLocaleString('es-AR')}
-                    </td>
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          {loading ? (
+            <div className="flex h-64 items-center justify-center">
+              <svg className="animate-spin h-8 w-8 text-[#74ACDF]" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+            </div>
+          ) : report.length === 0 ? (
+            <div className="py-16 text-center text-slate-400 font-semibold">
+              No hay referidos o comisiones registradas en la planilla.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-left text-sm text-slate-700">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-100 font-bold text-slate-800 text-xs uppercase tracking-wider">
+                    <th className="px-6 py-4">Scout (Vendedor)</th>
+                    <th className="px-6 py-4">Código Referido</th>
+                    <th className="px-6 py-4 text-center">Entradas Vendidas</th>
+                    <th className="px-6 py-4 text-right">Comisión Devengada</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {report.map((item) => (
+                    <tr key={item.id} className="hover:bg-slate-50/50 transition">
+                      <td className="px-6 py-4 font-bold text-slate-800 capitalize">Scout {item.name}</td>
+                      <td className="px-6 py-4 font-mono text-xs font-bold text-[#437fb2]">{item.referralCode}</td>
+                      <td className="px-6 py-4 text-center font-bold text-slate-700">{item.totalTickets}</td>
+                      <td className="px-6 py-4 text-right font-extrabold text-emerald-600">${item.commission.toLocaleString('es-AR')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );

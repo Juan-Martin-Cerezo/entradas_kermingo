@@ -32,6 +32,7 @@ model Purchase {
   promoter_id    String?
   promoter       Promoter?     @relation(fields: [promoter_id], references: [id])
   tickets        Ticket[]
+  email_sent     Boolean       @default(false)
   createdAt      DateTime      @default(now())
 }
 
