@@ -10,12 +10,21 @@ let db: PrismaClient;
 const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/dummy_db';
 
 if (process.env.NODE_ENV === 'production') {
-  const pool = new pg.Pool({ connectionString });
+  const pool = new pg.Pool({
+    connectionString,
+    max: 1, // Only 1 connection per serverless instance to prevent connection exhaustion
+    idleTimeoutMillis: 1000, // Terminate idle connections quickly
+    connectionTimeoutMillis: 5000, // Fail fast rather than hanging the route handler
+  });
   const adapter = new PrismaPg(pool);
   db = new PrismaClient({ adapter });
 } else {
   if (!globalForPrisma.prisma) {
-    const pool = new pg.Pool({ connectionString });
+    const pool = new pg.Pool({
+      connectionString,
+      max: 2, // Limit local pool sizes
+      idleTimeoutMillis: 1000,
+    });
     const adapter = new PrismaPg(pool);
     globalForPrisma.prisma = new PrismaClient({
       adapter,

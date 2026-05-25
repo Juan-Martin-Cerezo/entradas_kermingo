@@ -5,9 +5,11 @@ import { Html5Qrcode } from 'html5-qrcode';
 
 interface QrScannerProps {
   onScanResult: (result: { success: boolean; data?: any; error?: string }) => void;
+  forceOffline?: boolean;
+  onOfflineScan?: (ticketId: string) => { success: boolean; data?: any; error?: string };
 }
 
-export default function QrScanner({ onScanResult }: QrScannerProps) {
+export default function QrScanner({ onScanResult, forceOffline = false, onOfflineScan }: QrScannerProps) {
   const scannerId = 'kermingo-qr-reader-element';
   const qrScannerRef = useRef<Html5Qrcode | null>(null);
   const [cameraPermission, setCameraPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
@@ -68,6 +70,12 @@ export default function QrScanner({ onScanResult }: QrScannerProps) {
   const [errorState, setErrorState] = useState<string | null>(null);
 
   const validateTicket = async (ticketId: string) => {
+    if (forceOffline && onOfflineScan) {
+      const result = onOfflineScan(ticketId);
+      onScanResult(result);
+      return;
+    }
+
     try {
       const res = await fetch('/api/tickets/validate', {
         method: 'POST',
@@ -91,7 +99,12 @@ export default function QrScanner({ onScanResult }: QrScannerProps) {
         onScanResult({ success: false, error: data?.error || 'INVALID TICKET' });
       }
     } catch (err: any) {
-      onScanResult({ success: false, error: 'CONNECTION ERROR' });
+      if (onOfflineScan) {
+        const result = onOfflineScan(ticketId);
+        onScanResult(result);
+      } else {
+        onScanResult({ success: false, error: 'CONNECTION ERROR' });
+      }
     }
   };
 

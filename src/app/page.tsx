@@ -2,6 +2,68 @@
 
 import { useState } from 'react';
 
+const compressImage = (file: File, maxWidth = 1200, maxHeight = 1200, quality = 0.6): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) {
+      resolve(file);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve(file);
+              return;
+            }
+            const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = () => resolve(file);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+};
+
 export default function CheckoutPage() {
   const [email, setEmail] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -11,6 +73,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadingCompress, setLoadingCompress] = useState(false);
 
   const pricePerTicket = 5500;
   const totalPrice = quantity * pricePerTicket;
@@ -295,24 +358,55 @@ export default function CheckoutPage() {
                         accept="image/*,application/pdf"
                         required
                         className="sr-only"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           if (e.target.files && e.target.files.length > 0) {
                             const file = e.target.files[0];
-                            if (file.size > 4 * 1024 * 1024) {
-                              setError('El comprobante es demasiado pesado (máximo 4MB). Por favor, subí una captura de pantalla comprimida o un archivo más chico.');
+                            if (file.type === 'application/pdf') {
+                              if (file.size > 4 * 1024 * 1024) {
+                                setError('El comprobante en PDF es demasiado pesado (máximo 4MB). Por favor, subí un archivo más chico.');
+                                setReceipt(null);
+                                e.target.value = '';
+                              } else {
+                                setError(null);
+                                setReceipt(file);
+                              }
+                            } else if (file.type.startsWith('image/')) {
+                              if (file.size > 15 * 1024 * 1024) {
+                                setError('La imagen es demasiado pesada (máximo 15MB). Por favor, subí una captura de pantalla más chica.');
+                                setReceipt(null);
+                                e.target.value = '';
+                                return;
+                              }
+                              setError(null);
+                              setLoadingCompress(true);
+                              try {
+                                const compressed = await compressImage(file);
+                                setReceipt(compressed);
+                              } catch (err) {
+                                console.error('Image compression failed, using original file', err);
+                                setReceipt(file);
+                              } finally {
+                                setLoadingCompress(false);
+                              }
+                            } else {
+                              setError('Formato no soportado. Por favor, subí una imagen (PNG, JPG) o un PDF.');
                               setReceipt(null);
                               e.target.value = '';
-                            } else {
-                              setError(null);
-                              setReceipt(file);
                             }
                           }
                         }}
                       />
                     </label>
-                    <p className="pl-1">o arrastrar y soltar</p>
+                    <p className="pl-1 text-slate-500">o arrastrar y soltar</p>
                   </div>
-                  <p className="text-xs text-slate-400 mt-1">PNG, JPG, PDF hasta 10MB</p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Formatos: PNG, JPG (hasta 15MB, se comprimen automáticamente) o PDF (hasta 4MB).
+                  </p>
+                  {loadingCompress && (
+                    <div className="mt-3 text-xs font-bold text-[#74ACDF] animate-pulse">
+                      ⚡ Optimizando y comprimiendo imagen...
+                    </div>
+                  )}
                   {receipt && (
                     <div className="mt-3 rounded-lg bg-green-50 p-2 border border-green-200">
                       <p className="text-xs font-bold text-green-700 flex items-center justify-center gap-1">
