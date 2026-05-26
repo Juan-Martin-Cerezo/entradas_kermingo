@@ -38,7 +38,17 @@ export default function QrScanner({ onScanResult, forceOffline = false, onOfflin
     const scanner = new Html5Qrcode(scannerId);
     qrScannerRef.current = scanner;
 
-    startScanning();
+    // Check if permission is already granted, if so start immediately
+    navigator.permissions?.query({ name: 'camera' as any }).then((permissionStatus) => {
+      if (permissionStatus.state === 'granted') {
+        startScanning();
+      } else if (permissionStatus.state === 'denied') {
+        setCameraPermission('denied');
+      }
+    }).catch(() => {
+      // Fallback: try to start, if user hasn't granted yet it will fail and show prompt
+      startScanning(true); // silentFail = true
+    });
 
     return () => {
       if (qrScannerRef.current && qrScannerRef.current.isScanning) {
@@ -48,12 +58,22 @@ export default function QrScanner({ onScanResult, forceOffline = false, onOfflin
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const startScanning = async () => {
+  const startScanning = async (silentFail = false) => {
     if (!qrScannerRef.current) return;
 
     try {
       setScanning(true);
       setErrorState(null);
+      
+      // Stop scanner if already running
+      if (qrScannerRef.current.isScanning) {
+        try {
+          await qrScannerRef.current.stop();
+        } catch (e) {
+          // ignore
+        }
+      }
+
       await qrScannerRef.current.start(
         { facingMode: 'environment' },
         {
@@ -79,8 +99,14 @@ export default function QrScanner({ onScanResult, forceOffline = false, onOfflin
     } catch (err: any) {
       console.error('Camera start error:', err);
       setScanning(false);
-      if (err?.toString().includes('NotAllowedError')) {
+      
+      const errStr = err?.toString() || '';
+      if (errStr.includes('NotAllowedError') || errStr.includes('Permission denied')) {
         setCameraPermission('denied');
+      } else {
+        if (!silentFail) {
+          setErrorState('No se pudo iniciar la cámara. Verificá que no esté siendo usada por otra pestaña.');
+        }
       }
     }
   };
@@ -126,37 +152,50 @@ export default function QrScanner({ onScanResult, forceOffline = false, onOfflin
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-2">
-      {cameraPermission === 'prompt' && (
-        <div className="text-center p-4">
-          <p className="text-sm text-slate-300 mb-4">
-            Se requiere permiso de cámara para escanear los códigos QR de las entradas.
-          </p>
-          <button
-            onClick={startScanning}
-            className="bg-[#74ACDF] hover:bg-[#5490c4] text-white font-bold px-6 py-2.5 rounded-xl transition cursor-pointer"
-          >
-            Activar Cámara 📷
-          </button>
-        </div>
-      )}
+    <div className="flex flex-col items-center justify-center p-2 w-full">
+      <div className="relative w-full max-w-sm aspect-square overflow-hidden rounded-2xl border-4 border-[#74ACDF] bg-black shadow-lg flex flex-col items-center justify-center p-4">
+        
+        {/* The scanner element (must always be rendered and have layout size for html5-qrcode initialization) */}
+        <div
+          id={scannerId}
+          className="absolute inset-0 w-full h-full"
+          style={{ 
+            opacity: cameraPermission === 'granted' ? 1 : 0,
+            pointerEvents: cameraPermission === 'granted' ? 'auto' : 'none'
+          }}
+        />
 
-      {cameraPermission === 'denied' && (
-        <div className="text-center p-4 border border-red-500/20 bg-red-950/20 rounded-2xl">
-          <span className="text-3xl block mb-2">🚫</span>
-          <p className="text-sm text-red-400 font-semibold">
-            Permiso de cámara denegado. Por favor, permití el acceso a la cámara en los ajustes de tu navegador y recargá la página.
-          </p>
-        </div>
-      )}
+        {/* Overlay for prompting permission */}
+        {cameraPermission === 'prompt' && (
+          <div className="z-10 text-center px-4 py-6">
+            <span className="text-4xl block mb-3">📷</span>
+            <p className="text-sm text-slate-300 mb-4">
+              Se requiere permiso de cámara para escanear los códigos QR de las entradas.
+            </p>
+            <button
+              onClick={() => startScanning()}
+              className="bg-[#74ACDF] hover:bg-[#5490c4] text-white font-bold px-6 py-2.5 rounded-xl transition cursor-pointer text-sm shadow-md"
+            >
+              Activar Cámara 📷
+            </button>
+          </div>
+        )}
 
-      <div
-        id={scannerId}
-        className="w-full max-w-sm overflow-hidden rounded-2xl border-4 border-[#74ACDF] bg-black shadow-lg"
-        style={{ display: cameraPermission === 'granted' ? 'block' : 'none' }}
-      />
+        {/* Overlay for denied permission */}
+        {cameraPermission === 'denied' && (
+          <div className="z-10 text-center px-4 py-6">
+            <span className="text-4xl block mb-3">🚫</span>
+            <p className="text-sm text-red-400 font-bold mb-2">
+              Acceso a la cámara denegado
+            </p>
+            <p className="text-xs text-slate-400">
+              Por favor, permití el acceso a la cámara en los ajustes de tu navegador y recargá la página.
+            </p>
+          </div>
+        )}
+      </div>
 
-      {scanning && (
+      {scanning && cameraPermission === 'granted' && (
         <p className="mt-4 text-xs font-bold text-slate-400 animate-pulse flex items-center gap-1.5 justify-center">
           <span className="h-2 w-2 rounded-full bg-green-500 animate-ping" />
           Apunta al código QR de la entrada...
@@ -164,7 +203,7 @@ export default function QrScanner({ onScanResult, forceOffline = false, onOfflin
       )}
 
       {errorState && (
-        <p className="mt-2 text-xs font-bold text-red-500 text-center">
+        <p className="mt-4 text-xs font-bold text-red-500 text-center max-w-xs">
           ⚠ {errorState}
         </p>
       )}
