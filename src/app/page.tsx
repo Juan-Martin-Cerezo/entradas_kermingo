@@ -308,13 +308,26 @@ export default function CheckoutPage() {
 
           {/* Transfer Info */}
           <div className="mb-8 rounded-2xl border-2 border-dashed border-[#74ACDF] bg-[#74ACDF]/5 p-4 text-sm text-slate-700">
-            <h3 className="mb-2 font-bold text-slate-800 flex items-center gap-2">
+            <h3 className="mb-3 font-bold text-slate-800 flex items-center gap-2">
               <span>💳</span> Datos de Transferencia Bancaria
             </h3>
-            <p className="mb-1"><strong>Banco:</strong> Banco de la Scaloneta</p>
-            <p className="mb-1"><strong>Alias:</strong> kermingo.scout.2026</p>
-            <p className="mb-1"><strong>CBU:</strong> 0000003100012345678901</p>
-            <p className="mt-2 text-xs text-slate-500 font-semibold">
+            <p className="mb-1"><strong>Nombre completo:</strong> Guadalupe Sofía Hryb Alvarez</p>
+            <p className="mb-1"><strong>Banco:</strong> Brubank</p>
+            <p className="mb-1"><strong>CBU:</strong> 1430001713038182530011</p>
+            <div className="mb-1 flex items-center gap-2">
+              <p><strong>Alias:</strong> <span className="font-bold text-[#5490c4] bg-blue-50 px-2 py-0.5 rounded border border-blue-200">evento.kermingo</span></p>
+              <button 
+                type="button"
+                onClick={() => navigator.clipboard.writeText('evento.kermingo')}
+                className="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded transition-colors active:scale-95 cursor-pointer font-semibold"
+                title="Copiar Alias"
+              >
+                Copiar
+              </button>
+            </div>
+            <p className="mb-1"><strong>Nº de cuenta:</strong> 1303818253001</p>
+            <p className="mb-1"><strong>CUIT:</strong> 27-45689712-1</p>
+            <p className="mt-3 text-xs text-slate-500 font-semibold border-t border-[#74ACDF]/20 pt-3">
               * El valor de la entrada anticipada es de <strong>${TICKET_PRICE.toLocaleString('es-AR')} ARS</strong>. Transferí el total correspondiente y adjuntá el comprobante abajo.
             </p>
           </div>
