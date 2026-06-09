@@ -394,7 +394,7 @@ export default function AdminDashboard() {
 
                   {purchase.dietary_preferences && (
                     <div className="rounded-xl bg-amber-50 p-3 text-xs border border-amber-150">
-                      <span className="text-amber-800 font-bold block mb-1">Preferencias Alimenticias:</span>
+                      <span className="text-amber-800 font-bold block mb-1">Restricciones/Preferencias:</span>
                       <p className="text-slate-700 font-medium">{purchase.dietary_preferences}</p>
                     </div>
                   )}

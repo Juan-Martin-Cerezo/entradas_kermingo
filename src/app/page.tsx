@@ -431,7 +431,7 @@ export default function CheckoutPage() {
             {/* Dietary Preferences */}
             <div>
               <label htmlFor="dietary" className="block text-sm font-semibold text-slate-700">
-                Preferencias Alimenticias <span className="text-slate-400 font-normal">(Opcional)</span>
+                Restricciones o Preferencias Alimentarias <span className="text-slate-400 font-normal">(Opcional)</span>
               </label>
               <input
                 type="text"
