@@ -307,7 +307,7 @@ export default function CheckoutPage() {
               </li>
               <li>Cada persona deberá mostrar su código QR desde su celular al ingresar al evento para registrar la entrada.</li>
               <li className="text-amber-900 font-bold">
-                🎁 ¡Regalo especial! Tu entrada viene con un cartón gratis para utilizar en la última ronda del kermingo.
+                🎁 Tu entrada viene con un cartón gratis para utilizar en la última ronda del bingo.
               </li>
             </ol>
           </div>
@@ -336,7 +336,7 @@ export default function CheckoutPage() {
             <p className="mt-3 text-xs text-slate-500 font-semibold border-t border-[#74ACDF]/20 pt-3 leading-relaxed">
               * El valor de la entrada anticipada es de <strong>${TICKET_PRICE.toLocaleString('es-AR')} ARS</strong>. Transferí el total correspondiente y adjuntá el comprobante abajo.
               <br />
-              <span className="text-amber-700 font-bold mt-1 block">🎟️ Cada entrada adquirida incluye de regalo un cartón gratis para la última ronda del kermingo.</span>
+              <span className="text-amber-700 font-bold mt-1 block">🎟️ Cada entrada adquirida incluye de regalo un cartón gratis para la última ronda del bingo.</span>
             </p>
           </div>
 
