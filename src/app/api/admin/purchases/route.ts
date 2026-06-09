@@ -18,6 +18,7 @@ export async function GET(req: Request) {
         quantity: true,
         payment_status: true,
         attendee_names: true,
+        dietary_preferences: true,
         email_sent: true,
         createdAt: true,
         promoter: {

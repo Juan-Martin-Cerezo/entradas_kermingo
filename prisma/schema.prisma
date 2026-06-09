@@ -23,17 +23,18 @@ enum PaymentStatus {
 }
 
 model Purchase {
-  id             String        @id @default(uuid())
-  buyer_email    String
-  receipt_url    String
-  quantity       Int
-  attendee_names String        @default("[]") // JSON string storing attendee names
-  payment_status PaymentStatus @default(PENDING)
-  promoter_id    String?
-  promoter       Promoter?     @relation(fields: [promoter_id], references: [id])
-  tickets        Ticket[]
-  email_sent     Boolean       @default(false)
-  createdAt      DateTime      @default(now())
+  id                  String        @id @default(uuid())
+  buyer_email         String
+  receipt_url         String
+  quantity            Int
+  attendee_names      String        @default("[]") // JSON string storing attendee names
+  dietary_preferences String        @default("")
+  payment_status      PaymentStatus @default(PENDING)
+  promoter_id         String?
+  promoter            Promoter?     @relation(fields: [promoter_id], references: [id])
+  tickets             Ticket[]
+  email_sent          Boolean       @default(false)
+  createdAt           DateTime      @default(now())
 }
 
 model Ticket {

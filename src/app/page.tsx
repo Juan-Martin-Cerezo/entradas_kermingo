@@ -70,6 +70,7 @@ export default function CheckoutPage() {
   const [quantity, setQuantity] = useState(1);
   const [names, setNames] = useState<string[]>(['']);
   const [referralCode, setReferralCode] = useState('');
+  const [dietaryPreferences, setDietaryPreferences] = useState('');
   const [receipt, setReceipt] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -194,6 +195,7 @@ export default function CheckoutPage() {
       formData.append('referralCode', referralCode);
       formData.append('receipt', receipt);
       formData.append('attendeeNames', JSON.stringify(names.map((n) => n.trim())));
+      formData.append('dietaryPreferences', dietaryPreferences.trim());
 
       const res = await fetch('/api/checkout', {
         method: 'POST',
@@ -256,6 +258,7 @@ export default function CheckoutPage() {
               setNames(['']);
               setReferralCode('');
               setReceipt(null);
+              setDietaryPreferences('');
             }}
             className="w-full rounded-xl bg-gradient-to-r from-[#74ACDF] to-[#5490c4] py-3 font-semibold text-white shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
           >
@@ -303,6 +306,9 @@ export default function CheckoutPage() {
                 <strong>¡Muy importante!</strong> Una vez que confirmemos tu pago (verificación manual por los Scouts, la cual <strong>no es instantánea</strong> y puede demorar unas horas), te llegará un mail con <strong>un código QR por cada asistente</strong>.
               </li>
               <li>Cada persona deberá mostrar su código QR desde su celular al ingresar al evento para registrar la entrada.</li>
+              <li className="text-amber-900 font-bold">
+                🎁 ¡Regalo especial! Tu entrada viene con un cartón gratis para utilizar en la última ronda del kermingo.
+              </li>
             </ol>
           </div>
 
@@ -327,8 +333,10 @@ export default function CheckoutPage() {
             </div>
             <p className="mb-1"><strong>Nº de cuenta:</strong> 1303818253001</p>
             <p className="mb-1"><strong>CUIT:</strong> 27-45689712-1</p>
-            <p className="mt-3 text-xs text-slate-500 font-semibold border-t border-[#74ACDF]/20 pt-3">
+            <p className="mt-3 text-xs text-slate-500 font-semibold border-t border-[#74ACDF]/20 pt-3 leading-relaxed">
               * El valor de la entrada anticipada es de <strong>${TICKET_PRICE.toLocaleString('es-AR')} ARS</strong>. Transferí el total correspondiente y adjuntá el comprobante abajo.
+              <br />
+              <span className="text-amber-700 font-bold mt-1 block">🎟️ Cada entrada adquirida incluye de regalo un cartón gratis para la última ronda del kermingo.</span>
             </p>
           </div>
 
@@ -417,6 +425,24 @@ export default function CheckoutPage() {
               />
               <p className="mt-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                 ⚠️ <span className="font-semibold">Aviso:</span> El sistema de referidos está habilitado exclusivamente para los Scouts pertenecientes a la <strong>Unidad Scout Mártires Palotinos</strong>. Ingresá el nombre completo del Scout que te invitó.
+              </p>
+            </div>
+
+            {/* Dietary Preferences */}
+            <div>
+              <label htmlFor="dietary" className="block text-sm font-semibold text-slate-700">
+                Preferencias Alimenticias <span className="text-slate-400 font-normal">(Opcional)</span>
+              </label>
+              <input
+                type="text"
+                id="dietary"
+                value={dietaryPreferences}
+                onChange={(e) => setDietaryPreferences(e.target.value)}
+                placeholder="Ej: 1 celíaco, 1 vegetariano"
+                className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-800 outline-none transition focus:border-[#74ACDF] focus:ring-2 focus:ring-[#74ACDF]/20"
+              />
+              <p className="mt-1 text-xs text-slate-400">
+                Indicanos si vos o alguno de tus acompañantes tienen restricciones (celiaquía, vegetariano, vegano, alergias, etc.).
               </p>
             </div>
 

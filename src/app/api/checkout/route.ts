@@ -10,6 +10,7 @@ export async function POST(req: Request) {
     const referralCode = formData.get('referralCode') as string | null;
     const receiptFile = formData.get('receipt') as File | null;
     const attendeeNamesStr = formData.get('attendeeNames') as string; // JSON array of names
+    const dietaryPreferences = formData.get('dietaryPreferences') as string | null;
 
     if (!email || !quantityStr || !receiptFile || !attendeeNamesStr) {
       return NextResponse.json({ error: 'Faltan campos requeridos.' }, { status: 400 });
@@ -75,6 +76,7 @@ export async function POST(req: Request) {
         payment_status: 'PENDING',
         promoter_id: promoterId,
         attendee_names: JSON.stringify(attendeeNames),
+        dietary_preferences: dietaryPreferences || '',
         email_sent: false,
       },
     });
