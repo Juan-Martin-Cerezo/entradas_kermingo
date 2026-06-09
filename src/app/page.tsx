@@ -226,7 +226,7 @@ export default function CheckoutPage() {
 
   if (success) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#74ACDF] via-white to-[#74ACDF] px-4 py-12">
+      <div suppressHydrationWarning className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#74ACDF] via-white to-[#74ACDF] px-4 py-12">
         <div className="w-full max-w-md rounded-3xl border-4 border-[#D4AF37] bg-white/95 p-8 text-center shadow-2xl backdrop-blur-md">
           <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-3xl">
             🏆
@@ -270,7 +270,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-[#74ACDF] via-white to-[#74ACDF]">
+    <div suppressHydrationWarning className="flex min-h-screen flex-col bg-gradient-to-b from-[#74ACDF] via-white to-[#74ACDF]">
       {/* Header / Hero */}
       <header className="py-10 text-center text-slate-800 px-4">
         <div className="mx-auto mb-3 flex justify-center gap-2 text-4xl">

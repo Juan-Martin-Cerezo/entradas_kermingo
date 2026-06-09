@@ -202,7 +202,7 @@ export default function AdminDashboard() {
 
   if (!isAuthorized) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#74ACDF] via-white to-[#74ACDF] px-4">
+      <div suppressHydrationWarning className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#74ACDF] via-white to-[#74ACDF] px-4">
         <div className="w-full max-w-md rounded-3xl border-4 border-[#D4AF37] bg-white p-8 shadow-2xl">
           <div className="mb-4 text-center">
             <span className="text-4xl">🔐</span>
@@ -235,7 +235,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800">
+    <div suppressHydrationWarning className="flex min-h-screen flex-col bg-slate-50 text-slate-800">
       {/* Navigation */}
       <nav className="border-b-4 border-[#D4AF37] bg-[#74ACDF] px-4 py-4 text-white shadow-md">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
