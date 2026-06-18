@@ -18,7 +18,5 @@ export default defineConfig({
     path: "prisma/migrations",
     seed: "npx tsx prisma/seed.ts",
   },
-  datasource: {
-    url: dbUrl,
-  },
+  // datasource no necesita 'url' aquí si ya lo pasas en el constructor de PrismaClient
 });
