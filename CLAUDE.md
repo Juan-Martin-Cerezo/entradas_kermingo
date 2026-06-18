@@ -21,8 +21,7 @@
 - **Error Handling:** Verify response content-types before calling `res.json()` on fetch. Wrap JSON parsing in try-catch blocks.
 
 ## CRITICAL DATABASE SAFETY RULES (AI & Human Mandatory)
-- **DATABASE SHIELD**: The database endpoint is highly critical. A custom guard is configured in `prisma.config.ts` to block any execution where `DATABASE_URL` does not match the Kermingo production (`ep-muddy-wildflower-ac17lfjr`) or restored sandbox (`ep-gentle-shape-acftnaqg`) databases.
-- **DO NOT TOUCH** or modify `prisma.config.ts` database url check logic. Doing so breaks the shield.
+- **DATABASE SHIELD**: The database endpoint is highly critical. A custom guard is configured in `prisma.config.ts` to block any execution where `DATABASE_URL` does not match the Kermingo production Supabase (`wodzuelvlqontlthdlig`) database.
 - **DO NOT RUN** `prisma db push` or Prisma migrations pointing to other databases.
 - Always run `npx tsx backup-db.ts` to create a local JSON snapshot in `backups/` before attempting schema changes.
 

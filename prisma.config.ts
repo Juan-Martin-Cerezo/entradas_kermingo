@@ -4,9 +4,10 @@ import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
 const dbUrl = process.env["DATABASE_URL"] || "";
+const directUrl = process.env["DIRECT_URL"] || "";
 
 // Guard to prevent accidental overwrites/pushes to the wrong database
-if (dbUrl && !dbUrl.includes("ep-muddy-wildflower-ac17lfjr") && !dbUrl.includes("ep-gentle-shape-acftnaqg")) {
+if ((dbUrl && !dbUrl.includes("wodzuelvlqontlthdlig")) || (directUrl && !directUrl.includes("wodzuelvlqontlthdlig"))) {
   console.error("❌ ERROR: DATABASE_URL does not belong to Kermingo! Execution blocked to prevent accidental overwrite.");
   process.exit(1);
 }
@@ -18,6 +19,6 @@ export default defineConfig({
     seed: "npx tsx prisma/seed.ts",
   },
   datasource: {
-    url: dbUrl,
+    url: directUrl || dbUrl,
   },
 });
