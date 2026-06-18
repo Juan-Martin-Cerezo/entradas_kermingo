@@ -12,6 +12,7 @@ const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:post
 if (process.env.NODE_ENV === 'production') {
   const pool = new pg.Pool({
     connectionString,
+    ssl: { rejectUnauthorized: false },
     max: 4, // Allow up to 4 concurrent connections per serverless container to handle parallel queries
     idleTimeoutMillis: 15000, // Keep idle connections alive for 15s to optimize subsequent page loads
     connectionTimeoutMillis: 30000, // 30s timeout to ensure Neon has enough time to wake up from auto-suspension (cold start)
