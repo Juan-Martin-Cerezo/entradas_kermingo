@@ -3,11 +3,12 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
+// prisma.config.ts
 const dbUrl = process.env["DATABASE_URL"] || "";
 
-// Guard to prevent accidental overwrites/pushes to the wrong database
-if (dbUrl && !dbUrl.includes("ep-muddy-wildflower-ac17lfjr") && !dbUrl.includes("ep-gentle-shape-acftnaqg")) {
-  console.error("❌ ERROR: DATABASE_URL does not belong to Kermingo! Execution blocked to prevent accidental overwrite.");
+// ELIMINAMOS EL BLOQUEO ESTRICTO DE NEON PARA PERMITIR SUPABASE
+if (!dbUrl) {
+  console.error("❌ ERROR: DATABASE_URL no está definida.");
   process.exit(1);
 }
 
