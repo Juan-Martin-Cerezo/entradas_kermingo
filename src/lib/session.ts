@@ -9,7 +9,6 @@ export interface SessionPayload {
   role: Role;
   email?: string;
   exp: number; // Unix timestamp in seconds
-  [key: string]: unknown;
 }
 
 export const SESSION_COOKIE_NAME = 'eventhub_session';

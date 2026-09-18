@@ -6,8 +6,17 @@ import * as path from 'path';
 async function main() {
   console.log('🔄 Starting Database Restoration from Local JSON Backup...');
   const { db } = await import('./src/lib/db');
-  
+
+  // Multi-tenant: este script restaura en UN evento (override con EVENT_SLUG).
+  const targetSlug = process.env.EVENT_SLUG || 'kermingo-2026';
+
   try {
+    const targetEvent = await db.event.findUnique({ where: { slug: targetSlug }, select: { id: true } });
+    if (!targetEvent) {
+      console.error(`Error: evento '${targetSlug}' no existe. Corré el seed o pasá EVENT_SLUG.`);
+      return;
+    }
+    const eventId = targetEvent.id;
     const backupDir = path.join(__dirname, 'backups');
     if (!fs.existsSync(backupDir)) {
       console.error('Error: No backups directory found.');
@@ -41,6 +50,7 @@ async function main() {
         await tx.promoter.create({
           data: {
             id: promoter.id,
+            event_id: promoter.event_id ?? eventId,
             name: promoter.name,
             referral_code: promoter.referral_code,
           }
@@ -55,6 +65,7 @@ async function main() {
         await tx.purchase.create({
           data: {
             ...purchaseFields,
+            event_id: purchaseFields.event_id ?? eventId,
             createdAt: new Date(purchaseFields.createdAt)
           }
         });
@@ -64,6 +75,7 @@ async function main() {
           await tx.ticket.create({
             data: {
               ...ticketFields,
+              event_id: ticketFields.event_id ?? eventId,
               entry_date: ticketFields.entry_date ? new Date(ticketFields.entry_date) : null
             }
           });

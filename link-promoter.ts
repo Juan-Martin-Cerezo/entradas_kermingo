@@ -30,13 +30,14 @@ async function main() {
 
     // 2. Find or create the promoter
     let promoter = await db.promoter.findUnique({
-      where: { referral_code: code },
+      where: { event_id_referral_code: { event_id: purchase.event_id, referral_code: code } },
     });
 
     if (!promoter) {
       console.log(`Promoter with code ${code} does not exist. Creating dynamically...`);
       promoter = await db.promoter.create({
         data: {
+          event_id: purchase.event_id,
           name: code,
           referral_code: code,
         },
