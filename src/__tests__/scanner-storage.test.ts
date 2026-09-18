@@ -10,9 +10,9 @@ import {
 
 describe('scanner storage scoped por slug', () => {
   it('genera claves con prefijo eh_<slug>_ y no usa las legacy globales', () => {
-    const keys = scannerStorageKeys('kermingo-2026');
-    expect(keys.offlineDb).toBe('eh_kermingo-2026_offline_db');
-    expect(keys.pendingSync).toBe('eh_kermingo-2026_pending_sync');
+    const keys = scannerStorageKeys('demo-festival');
+    expect(keys.offlineDb).toBe('eh_demo-festival_offline_db');
+    expect(keys.pendingSync).toBe('eh_demo-festival_pending_sync');
     expect(keys.offlineDb).not.toBe(LEGACY_OFFLINE_DB_KEY);
     expect(keys.pendingSync).not.toBe(LEGACY_PENDING_SYNC_KEY);
   });
@@ -25,7 +25,7 @@ describe('scanner storage scoped por slug', () => {
   });
 
   it('normaliza el slug (trim + lowercase)', () => {
-    expect(scannerStorageKeys('  Kermingo-2026 ').offlineDb).toBe('eh_kermingo-2026_offline_db');
+    expect(scannerStorageKeys('  DEMO-FESTIVAL  ').offlineDb).toBe('eh_demo-festival_offline_db');
   });
 
   it('detecta ticket offline de otro evento para RECHAZARLO', () => {
@@ -51,10 +51,10 @@ describe('scanner storage scoped por slug', () => {
       (k) => store.get(k) ?? null,
       (k, v) => void store.set(k, v),
       (k) => void store.delete(k),
-      'kermingo-2026'
+      'demo-festival'
     );
-    expect(store.get('eh_kermingo-2026_offline_db')).toBe('[{"id":"t1"}]');
-    expect(store.get('eh_kermingo-2026_pending_sync')).toBe('["t1"]');
+    expect(store.get('eh_demo-festival_offline_db')).toBe('[{"id":"t1"}]');
+    expect(store.get('eh_demo-festival_pending_sync')).toBe('["t1"]');
     expect(store.has(LEGACY_OFFLINE_DB_KEY)).toBe(false);
     expect(store.has(LEGACY_PENDING_SYNC_KEY)).toBe(false);
   });
@@ -62,14 +62,14 @@ describe('scanner storage scoped por slug', () => {
   it('no pisa la base scoped si ya existe', () => {
     const store = new Map<string, string>([
       [LEGACY_OFFLINE_DB_KEY, '[{"id":"old"}]'],
-      ['eh_kermingo-2026_offline_db', '[{"id":"new"}]'],
+      ['eh_demo-festival_offline_db', '[{"id":"new"}]'],
     ]);
     migrateLegacyStorage(
       (k) => store.get(k) ?? null,
       (k, v) => void store.set(k, v),
       (k) => void store.delete(k),
-      'kermingo-2026'
+      'demo-festival'
     );
-    expect(store.get('eh_kermingo-2026_offline_db')).toBe('[{"id":"new"}]');
+    expect(store.get('eh_demo-festival_offline_db')).toBe('[{"id":"new"}]');
   });
 });

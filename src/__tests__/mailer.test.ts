@@ -21,7 +21,7 @@ describe('mailer templado por evento', () => {
     process.env.SMTP_FROM = 'EventHub <noreply@eventhub.app>';
   });
 
-  it('email de tickets sale con el nombre y alias del evento (no Kermingo)', async () => {
+  it('email de tickets sale con el nombre y alias del evento (no Demo)', async () => {
     const result = (await sendTicketsEmail('buyer@test.com', [
       { id: 't1', qrDataUrl: 'data:image/png;base64,AAAA', holderName: 'Juan Perez' },
     ], BRANDING)) as unknown as { subject: string; html: string; replyTo?: string };

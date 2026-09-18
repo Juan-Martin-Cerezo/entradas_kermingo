@@ -4,24 +4,93 @@ import { buildRejectionHtml, buildTicketsHtml, buildInviteHtml, buildVerificatio
 
 export type { EventBranding, TicketInfo };
 
+const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587', 10);
+
+// Sin timeouts, un SMTP que no responde deja el request colgado y el mail "no llega" sin error.
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.mailtrap.io',
-  port: parseInt(process.env.SMTP_PORT || '2525', 10),
+  port: SMTP_PORT,
+  secure: SMTP_PORT === 465, // 465 = TLS directo; 587 = STARTTLS
+  requireTLS: SMTP_PORT === 587,
   auth: {
     user: process.env.SMTP_USER || '',
     pass: process.env.SMTP_PASS || '',
   },
+  pool: true,
+  maxConnections: 2,
+  connectionTimeout: 15000,
+  greetingTimeout: 10000,
+  socketTimeout: 20000,
 });
 
-const PLATFORM_FROM = '"EventHub" <noreply@eventhub.app>';
+/**
+ * Dirección remitente. Regla de oro anti-spam: NUNCA inventar un dominio que no
+ * tengas verificado — mandar como `noreply@dominio-inexistente` termina en spam o
+ * rechazado. Orden: MAIL_FROM_ADDRESS > MAIL_FROM > SMTP_FROM > usuario autenticado.
+ */
+function senderAddress(): string {
+  const explicit = process.env.MAIL_FROM_ADDRESS || process.env.MAIL_FROM || process.env.SMTP_FROM || '';
+  const angle = explicit.match(/<([^>]+)>/);
+  if (angle) return angle[1].trim();
+  if (explicit.includes('@')) return explicit.trim();
+  const user = process.env.SMTP_USER || '';
+  return user.includes('@') ? user : 'no-responder@localhost';
+}
+
+function withDisplayName(name: string, address = senderAddress()): string {
+  const clean = (name || 'EventHub').replace(/["<>]/g, '').trim().slice(0, 60) || 'EventHub';
+  return `"${clean}" <${address}>`;
+}
+
+const PLATFORM_FROM = withDisplayName('EventHub');
 
 function resolveFrom(branding: EventBranding): string {
-  if (process.env.SMTP_FROM) return process.env.SMTP_FROM;
-  return `"${branding.name}" <noreply@eventhub.app>`;
+  return withDisplayName(branding?.name || 'EventHub');
 }
 
 function resolveReplyTo(branding: EventBranding): string | undefined {
-  return branding.contactEmail ?? undefined;
+  return branding.contactEmail ?? process.env.MAIL_REPLY_TO ?? undefined;
+}
+
+/** Alternativa en texto plano: los filtros penalizan el HTML-only. */
+function htmlToText(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|tr|h[1-6]|li)>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function headersFor(branding: EventBranding) {
+  const reply = resolveReplyTo(branding);
+  return {
+    'Auto-Submitted': 'auto-generated',
+    ...(reply ? { 'List-Unsubscribe': `<mailto:${reply}?subject=unsubscribe>` } : {}),
+  } as Record<string, string>;
+}
+
+async function send(payload: nodemailer.SendMailOptions, label: string) {
+  try {
+    const info = await transporter.sendMail(payload);
+    console.log(`[mailer] ${label} ok →`, info.messageId, 'aceptados:', info.accepted);
+    return info;
+  } catch (error) {
+    const e = error as { code?: string; response?: string; command?: string; message?: string };
+    console.error(`[mailer] ${label} FALLÓ code=${e.code} command=${e.command} response=${e.response} :: ${e.message}`);
+    throw error;
+  }
+}
+
+/** Verifica conexión y credenciales SMTP (usado por /api/admin/test-email). */
+export async function verifyMailer() {
+  await transporter.verify();
+  return { host: process.env.SMTP_HOST, port: SMTP_PORT, from: PLATFORM_FROM, user: process.env.SMTP_USER };
 }
 
 export async function getEventBranding(eventId: string): Promise<EventBranding> {
@@ -68,16 +137,16 @@ export async function sendTicketsEmail(
     };
   });
 
-  const mailOptions = {
+  return send({
     from: resolveFrom(resolved),
     replyTo: resolveReplyTo(resolved),
     to: buyerEmail,
-    subject: `Tus Entradas para ${resolved.name}`,
+    subject: `Tus entradas para ${resolved.name}`,
+    text: htmlToText(htmlContent),
     html: htmlContent,
-    attachments: attachments,
-  };
-
-  return transporter.sendMail(mailOptions);
+    headers: headersFor(resolved),
+    attachments,
+  }, 'sendTicketsEmail');
 }
 
 export async function sendRejectionEmail(
@@ -89,15 +158,15 @@ export async function sendRejectionEmail(
   const resolved = branding ?? { name: 'tu evento' };
   const htmlContent = buildRejectionHtml(resolved, quantity, siteUrl);
 
-  const mailOptions = {
+  return send({
     from: resolveFrom(resolved),
     replyTo: resolveReplyTo(resolved),
     to: buyerEmail,
-    subject: `Compra de Entradas Rechazada - ${resolved.name}`,
+    subject: `Compra de entradas rechazada — ${resolved.name}`,
+    text: htmlToText(htmlContent),
     html: htmlContent,
-  };
-
-  return transporter.sendMail(mailOptions);
+    headers: headersFor(resolved),
+  }, 'sendRejectionEmail');
 }
 
 export async function sendInviteEmail(
@@ -107,14 +176,15 @@ export async function sendInviteEmail(
 ) {
   const htmlContent = buildInviteHtml(eventName, inviteUrl);
 
-  const mailOptions = {
+  return send({
     from: PLATFORM_FROM,
+    replyTo: resolveReplyTo({ name: eventName, contactEmail: process.env.MAIL_REPLY_TO }),
     to: ownerEmail,
     subject: `Invitación para administrar ${eventName} en EventHub`,
+    text: htmlToText(htmlContent),
     html: htmlContent,
-  };
-
-  return transporter.sendMail(mailOptions);
+    headers: headersFor({ name: eventName, contactEmail: process.env.MAIL_REPLY_TO }),
+  }, 'sendInviteEmail');
 }
 
 export async function sendVerificationEmail(
@@ -124,14 +194,15 @@ export async function sendVerificationEmail(
 ) {
   const htmlContent = buildVerificationHtml(eventName, verifyUrl);
 
-  const mailOptions = {
+  return send({
     from: PLATFORM_FROM,
+    replyTo: resolveReplyTo({ name: eventName, contactEmail: process.env.MAIL_REPLY_TO }),
     to: ownerEmail,
     subject: `Verificá tu cuenta de EventHub — ${eventName}`,
+    text: htmlToText(htmlContent),
     html: htmlContent,
-  };
-
-  return transporter.sendMail(mailOptions);
+    headers: headersFor({ name: eventName, contactEmail: process.env.MAIL_REPLY_TO }),
+  }, 'sendVerificationEmail');
 }
 
-export { PLATFORM_FROM };
+export { PLATFORM_FROM, transporter };

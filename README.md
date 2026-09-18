@@ -32,7 +32,7 @@ Un solo deploy sirve **N eventos de N dueños distintos**, cada uno con su marca
 | `/api/admin/platform-stats` | Stats por evento (solo superadmin) |
 | `/api/keep-alive` | **Único** ping de keep-alive de la plataforma |
 
-Rutas legacy (`/admin`, `/escaner`) redirigen 308 a `/kermingo-2026/...`.
+Rutas legacy (`/admin`, `/escaner`) redirigen 308 a `/`: **no existe un evento por defecto**, cada evento vive en su propio `/<slug>` y no hay listado público de eventos.
 
 ---
 

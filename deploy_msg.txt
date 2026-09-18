@@ -1,0 +1,19 @@
+refactor(eventos): sin evento por defecto y sin listado publico + mails que no caen en spam
+
+Pedido de Juan: el nombre Kermingo era de UN evento puntual, y no quiere que se pueda
+ver el listado de todos los eventos que existen.
+
+- se borra el evento Kermingo de produccion (0 compras / 0 tickets) y se crea el evento
+  demo `demo-festival` usando la API real de creacion (prueba E2E de F12)
+- no existe mas DEFAULT_EVENT_SLUG: /api/pricing exige slug, y las rutas legacy
+  (/admin, /escaner) redirigen a la home en vez de resolver a un slug hardcodeado
+- se elimina el listado publico de eventos: API /api/events y pagina /eventos borradas;
+  la home pasa a ser una landing sin listado (cada evento se comparte por su link)
+- mails: no se inventa mas un remitente de un dominio inexistente (noreply@eventhub.app
+  era la causa principal de spam/rechazo): ahora sale desde MAIL_FROM_ADDRESS / MAIL_FROM /
+  SMTP_FROM / el usuario autenticado, con alternativa en texto plano, List-Unsubscribe,
+  TLS correcto segun puerto (465 secure / 587 STARTTLS) y timeouts
+- nuevo /api/admin/test-email (superadmin) que verifica el SMTP, manda un mail real y
+  devuelve la respuesta del servidor + pistas por codigo de error
+- docs/email-deliverability.md: SPF/DKIM/DMARC, por que Gmail personal va a spam, y como
+  diagnosticar en 3 pasos

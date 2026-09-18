@@ -34,9 +34,9 @@ describe('Auth & Session System', () => {
     it('should sign and successfully verify a session payload', async () => {
       const payload = {
         eventId: 'event-123',
-        eventSlug: 'kermingo-2026',
+        eventSlug: 'demo-festival',
         role: 'owner' as const,
-        email: 'owner@kermingo.com',
+        email: 'owner@eventhub.app',
       };
 
       const token = await signSession(payload);
@@ -46,9 +46,9 @@ describe('Auth & Session System', () => {
       const verified = await verifySession(token);
       expect(verified).not.toBeNull();
       expect(verified?.eventId).toBe('event-123');
-      expect(verified?.eventSlug).toBe('kermingo-2026');
+      expect(verified?.eventSlug).toBe('demo-festival');
       expect(verified?.role).toBe('owner');
-      expect(verified?.email).toBe('owner@kermingo.com');
+      expect(verified?.email).toBe('owner@eventhub.app');
       expect(verified?.exp).toBeGreaterThan(Math.floor(Date.now() / 1000));
     });
 

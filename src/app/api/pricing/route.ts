@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
 import { getEventPricingBySlug, FALLBACK_PRICING } from '@/lib/pricing';
-import { DEFAULT_EVENT_SLUG } from '@/lib/constants';
 
+// No hay evento por defecto: el precio siempre es de un evento concreto.
 export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const slug = searchParams.get('slug');
+  if (!slug) {
+    return NextResponse.json({ error: 'slug requerido.' }, { status: 400 });
+  }
   try {
-    const { searchParams } = new URL(req.url);
-    const slug = searchParams.get('slug') || DEFAULT_EVENT_SLUG;
     const pricing = await getEventPricingBySlug(slug);
     return NextResponse.json({
       slug,
@@ -14,11 +17,6 @@ export async function GET(req: Request) {
       fallback: pricing === FALLBACK_PRICING,
     });
   } catch {
-    return NextResponse.json({
-      slug: DEFAULT_EVENT_SLUG,
-      ticketPriceCents: FALLBACK_PRICING.ticketPriceCents,
-      currency: FALLBACK_PRICING.currency,
-      fallback: true,
-    });
+    return NextResponse.json({ error: 'No se pudo obtener el precio.' }, { status: 500 });
   }
 }

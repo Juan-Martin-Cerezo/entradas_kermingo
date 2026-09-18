@@ -161,9 +161,9 @@ describe('F6 Onboarding & Event Owner Invitation', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          slug: 'kermingo-2026',
-          name: 'Kermingo 2026',
-          ownerEmail: 'new@kermingo.com',
+          slug: 'demo-festival',
+          name: 'Demo 2026',
+          ownerEmail: 'new@eventhub.app',
         }),
       });
 

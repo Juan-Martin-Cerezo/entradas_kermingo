@@ -146,7 +146,7 @@ function RegistroContent() {
           </p>
           <div className="mt-6">
             <Link
-              href="/eventos"
+              href="/panel/login"
               className="inline-block rounded-xl bg-[#74ACDF] px-6 py-2.5 font-bold text-white shadow-md hover:bg-[#5490c4] transition"
             >
               Ver eventos

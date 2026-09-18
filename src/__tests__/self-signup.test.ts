@@ -461,7 +461,7 @@ describe('F14 Registro self-service de dueños', () => {
       expect(RESERVED_SLUGS.has('verificar')).toBe(true);
     });
 
-    it('el email de verificación usa el link correcto, escapa el nombre y no menciona Kermingo', () => {
+    it('el email de verificación usa el link correcto, escapa el nombre y no menciona Demo', () => {
       const html = buildVerificationHtml('Fiesta <2026>', 'http://localhost/verificar?token=abc');
       expect(html).toContain('http://localhost/verificar?token=abc');
       expect(html).toContain('Fiesta &lt;2026&gt;');

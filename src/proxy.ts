@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getSessionFromRequest } from '@/lib/session';
-import { DEFAULT_EVENT_SLUG, RESERVED_SLUGS } from '@/lib/constants';
+import { RESERVED_SLUGS } from '@/lib/constants';
 
 async function sha256(message: string): Promise<string> {
   const msgBuffer = new TextEncoder().encode(message);
@@ -84,7 +84,8 @@ export async function proxy(request: NextRequest) {
   if (legacyRedirectMatch && !pathname.startsWith('/api/')) {
     const section = legacyRedirectMatch[1];
     const subpath = legacyRedirectMatch[2] || '';
-    return NextResponse.redirect(new URL(`/${DEFAULT_EVENT_SLUG}/${section}${subpath}`, request.url), 308);
+    // Sin evento por defecto: cada evento vive en su propio link /<slug>/...
+    return NextResponse.redirect(new URL('/', request.url), 308);
   }
 
   // 3. Legacy route protection (kept for direct /api access patterns): /admin/asistentes, /admin/referidos, /escaner

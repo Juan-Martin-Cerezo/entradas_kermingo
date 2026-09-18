@@ -1,67 +1,27 @@
-'use client';
-
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-interface EventItem {
-  id: string;
-  slug: string;
-  name: string;
-  status: string;
-}
-
+// No se listan eventos: cada evento tiene su propio link y sólo se llega con él.
 export default function HomePage() {
-  const [events, setEvents] = useState<EventItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch('/api/events')
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data: EventItem[]) => setEvents(data))
-      .catch(() => setEvents([]))
-      .finally(() => setLoading(false));
-  }, []);
-
   return (
-    <div suppressHydrationWarning className="flex min-h-screen flex-col bg-gradient-to-b from-[#74ACDF] via-white to-[#74ACDF]">
-      <header className="py-10 text-center text-slate-800 px-4">
-        <div className="mx-auto mb-3 flex justify-center gap-2 text-4xl">
-          <span>🎟️</span>
-        </div>
-        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
-          EventHub
-        </h1>
-        <p className="mt-2 text-lg font-bold text-slate-700">
-          Elegí tu evento y conseguí tus entradas
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#74ACDF] via-white to-[#74ACDF] px-4 text-center">
+      <div className="w-full max-w-lg rounded-3xl border-4 border-[#D4AF37] bg-white/95 p-8 shadow-2xl">
+        <div className="mb-2 text-4xl">🎟️</div>
+        <h1 className="text-4xl font-extrabold tracking-tight text-slate-800">EventHub</h1>
+        <p className="mt-3 text-slate-600 font-semibold">
+          Plataforma de entradas para eventos. Cada evento tiene su propio link de venta.
         </p>
-      </header>
-
-      <main className="flex-1 px-4 pb-16">
-        <div className="mx-auto max-w-xl">
-          {loading ? (
-            <p className="text-center text-slate-500 font-semibold">Cargando eventos...</p>
-          ) : events.length === 0 ? (
-            <div className="rounded-3xl border-4 border-[#D4AF37] bg-white/95 p-8 text-center shadow-2xl">
-              <p className="text-slate-600 font-semibold">No hay eventos a la venta por el momento.</p>
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              {events.map((event) => (
-                <Link
-                  key={event.id}
-                  href={`/${event.slug}`}
-                  className="rounded-3xl border-4 border-[#D4AF37] bg-white/95 p-6 shadow-2xl transition-transform hover:scale-[1.02] active:scale-95"
-                >
-                  <h2 className="text-2xl font-bold text-slate-800">{event.name}</h2>
-                  <p className="mt-1 text-sm font-semibold text-[#5490c4]">
-                    Conseguir entradas →
-                  </p>
-                </Link>
-              ))}
-            </div>
-          )}
+        <p className="mt-2 text-sm text-slate-500">
+          Si te compartieron un link de tu evento, abrilo directamente. Para administrar tus eventos entrá al panel.
+        </p>
+        <div className="mt-6 flex flex-col gap-3">
+          <Link href="/panel/login" className="rounded-xl bg-[#74ACDF] px-5 py-3 font-bold text-white hover:opacity-90">
+            Panel de administración
+          </Link>
+          <Link href="/registro" className="rounded-xl border-2 border-[#D4AF37] px-5 py-3 font-bold text-slate-700 hover:bg-amber-50">
+            Publicar mi evento
+          </Link>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
