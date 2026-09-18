@@ -14,6 +14,24 @@ async function sha256(message: string): Promise<string> {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // 0. Superadmin Panel: /panel and /panel/:path*
+  if (pathname === '/panel' || pathname.startsWith('/panel/')) {
+    const session = await getSessionFromRequest(request);
+
+    if (pathname === '/panel/login') {
+      if (session?.role === 'superadmin') {
+        return NextResponse.redirect(new URL('/panel', request.url));
+      }
+      return NextResponse.next();
+    }
+
+    if (session?.role !== 'superadmin') {
+      return NextResponse.redirect(new URL('/panel/login', request.url));
+    }
+
+    return NextResponse.next();
+  }
+
   // 1. Check for scoped multi-tenant routes: /:slug/admin/:path* or /:slug/escaner/:path*
   const scopedMatch = pathname.match(/^\/([^/]+)\/(admin|escaner)(\/.*)?$/);
 
@@ -112,5 +130,7 @@ export const config = {
     '/escaner/:path*',
     '/:slug/admin/:path*',
     '/:slug/escaner/:path*',
+    '/panel',
+    '/panel/:path*',
   ],
 };

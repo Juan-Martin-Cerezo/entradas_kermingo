@@ -184,3 +184,184 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export async function PATCH(req: Request) {
+  try {
+    const isAuthorized = await checkAuth(undefined, ['superadmin']);
+    if (!isAuthorized) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const {
+      id,
+      name,
+      slug,
+      status,
+      ticketPriceCents,
+      referralCommissionCents,
+      currency,
+      payAlias,
+      contactEmail,
+      maxTickets,
+      logoUrl,
+      reinvite,
+    } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID de evento requerido.' }, { status: 400 });
+    }
+
+    const existing = await db.event.findUnique({
+      where: { id },
+      include: { config: true, owner: true },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Evento no encontrado.' }, { status: 404 });
+    }
+
+    const eventUpdateData: Record<string, unknown> = {};
+
+    if (name !== undefined) {
+      eventUpdateData.name = String(name).trim();
+    }
+
+    if (status !== undefined) {
+      if (!['DRAFT', 'ON_SALE', 'CLOSED'].includes(status)) {
+        return NextResponse.json(
+          { error: 'Estado inválido. Debe ser DRAFT, ON_SALE o CLOSED.' },
+          { status: 400 }
+        );
+      }
+      eventUpdateData.status = status;
+    }
+
+    if (slug !== undefined) {
+      const cleanSlug = String(slug).trim().toLowerCase();
+      if (!/^[a-z0-9-]+$/.test(cleanSlug)) {
+        return NextResponse.json(
+          { error: 'El slug solo puede contener letras minúsculas, números y guiones.' },
+          { status: 400 }
+        );
+      }
+      if (RESERVED_SLUGS.has(cleanSlug)) {
+        return NextResponse.json(
+          { error: 'El slug seleccionado está reservado para el sistema.' },
+          { status: 400 }
+        );
+      }
+      if (cleanSlug !== existing.slug) {
+        const slugExists = await db.event.findUnique({ where: { slug: cleanSlug } });
+        if (slugExists) {
+          return NextResponse.json(
+            { error: 'Ya existe otro evento con ese slug.' },
+            { status: 409 }
+          );
+        }
+        eventUpdateData.slug = cleanSlug;
+      }
+    }
+
+    if (Object.keys(eventUpdateData).length > 0) {
+      await db.event.update({
+        where: { id },
+        data: eventUpdateData,
+      });
+    }
+
+    const configUpdateData: Record<string, unknown> = {};
+    if (ticketPriceCents !== undefined) {
+      configUpdateData.ticket_price_cents = Number(ticketPriceCents);
+    }
+    if (referralCommissionCents !== undefined) {
+      configUpdateData.referral_commission_cents = Number(referralCommissionCents);
+    }
+    if (currency !== undefined) {
+      configUpdateData.currency = String(currency).trim().toUpperCase();
+    }
+    if (payAlias !== undefined) {
+      configUpdateData.pay_alias = payAlias ? String(payAlias).trim() : null;
+    }
+    if (contactEmail !== undefined) {
+      configUpdateData.contact_email = contactEmail ? String(contactEmail).trim() : null;
+    }
+    if (maxTickets !== undefined) {
+      configUpdateData.max_tickets = maxTickets !== null && maxTickets !== '' ? Number(maxTickets) : null;
+    }
+    if (logoUrl !== undefined) {
+      configUpdateData.logo_url = logoUrl ? String(logoUrl).trim() : null;
+    }
+
+    if (Object.keys(configUpdateData).length > 0) {
+      await db.eventConfig.upsert({
+        where: { event_id: id },
+        update: configUpdateData,
+        create: {
+          event_id: id,
+          ticket_price_cents: Number(ticketPriceCents) || 500000,
+          referral_commission_cents: Number(referralCommissionCents) || 100000,
+          currency: String(currency || 'ARS').trim().toUpperCase(),
+          pay_alias: payAlias ? String(payAlias).trim() : null,
+          contact_email: contactEmail ? String(contactEmail).trim() : null,
+          max_tickets: maxTickets !== null && maxTickets !== '' ? Number(maxTickets) : null,
+          logo_url: logoUrl ? String(logoUrl).trim() : null,
+        },
+      });
+    }
+
+    let inviteToken: string | undefined;
+    let inviteUrl: string | undefined;
+
+    if (reinvite && existing.owner?.email) {
+      const activeSlug = (eventUpdateData.slug as string) || existing.slug;
+      inviteToken = await signInviteToken({
+        email: existing.owner.email,
+        eventId: existing.id,
+        eventSlug: activeSlug,
+      });
+
+      await db.eventOwner.update({
+        where: { id: existing.owner.id },
+        data: { invite_token: inviteToken },
+      });
+
+      const origin =
+        req.headers.get('origin') ||
+        process.env.NEXT_PUBLIC_SITE_URL ||
+        'http://localhost:3000';
+      inviteUrl = `${origin}/invitacion?token=${encodeURIComponent(inviteToken)}`;
+
+      try {
+        const activeName = (eventUpdateData.name as string) || existing.name;
+        await sendInviteEmail(existing.owner.email, activeName, inviteUrl);
+      } catch (mailError) {
+        console.error('Error reenviando email de invitación:', mailError);
+      }
+    }
+
+    const updated = await db.event.findUnique({
+      where: { id },
+      include: {
+        config: true,
+        owner: {
+          select: {
+            id: true,
+            email: true,
+            invite_token: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      event: updated,
+      inviteToken,
+      inviteUrl,
+    });
+  } catch (error: unknown) {
+    console.error('Error updating event:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
