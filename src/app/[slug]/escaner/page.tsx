@@ -197,7 +197,7 @@ export default function EscanerPage({ params }: { params: Promise<{ slug: string
       <nav className="border-b-4 border-[#D4AF37] bg-[#74ACDF] px-4 py-4 text-white shadow-md">
         <div className="mx-auto flex max-w-xl flex-wrap items-center justify-between gap-3">
           <Link href={`/${eventSlug}/admin`} className="text-base sm:text-lg font-black tracking-wider flex items-center gap-1 whitespace-nowrap">
-            <span>🏆</span> KERMINGO 2026
+            <span>🎟️</span> {eventSlug}
           </Link>
           <div className="flex flex-wrap gap-1.5">
             <Link href={`/${eventSlug}/admin`} className="text-xs sm:text-sm font-bold bg-white/20 px-2.5 py-1.5 rounded-lg hover:bg-white/30 transition whitespace-nowrap">

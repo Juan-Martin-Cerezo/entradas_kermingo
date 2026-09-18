@@ -11,7 +11,7 @@ interface QrScannerProps {
 }
 
 export default function QrScanner({ onScanResult, forceOffline = false, onOfflineScan, eventId }: QrScannerProps) {
-  const scannerId = 'kermingo-qr-reader-element';
+  const scannerId = 'eventhub-qr-reader-element';
   const qrScannerRef = useRef<Html5Qrcode | null>(null);
   const [cameraPermission, setCameraPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
   const [scanning, setScanning] = useState(false);

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import QRCode from 'qrcode';
-import { sendTicketsEmail, sendRejectionEmail } from '@/lib/mailer';
+import { sendTicketsEmail, sendRejectionEmail, getEventBranding } from '@/lib/mailer';
 import { checkAuth } from '@/lib/auth';
 
 export async function POST(req: Request) {
@@ -38,6 +38,8 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'La compra no está aprobada.' }, { status: 400 });
       }
 
+      const branding = await getEventBranding(purchase.event_id);
+
       // Generate QR codes
       const ticketsWithQr = await Promise.all(
         purchase.tickets.map(async (t) => {
@@ -55,7 +57,7 @@ export async function POST(req: Request) {
         if (!process.env.SMTP_USER || process.env.SMTP_USER.includes('placeholder')) {
           throw new Error('Las credenciales SMTP (correo) siguen en valores de marcador de posición (placeholder) en tu archivo .env.');
         }
-        await sendTicketsEmail(purchase.buyer_email, ticketsWithQr);
+        await sendTicketsEmail(purchase.buyer_email, ticketsWithQr, branding);
         
         await db.purchase.update({
           where: { id: purchaseId },
@@ -152,7 +154,12 @@ export async function POST(req: Request) {
         if (!process.env.SMTP_USER || process.env.SMTP_USER.includes('placeholder')) {
           throw new Error('Las credenciales SMTP (correo) siguen en valores de marcador de posición (placeholder) en tu archivo .env.');
         }
-        await sendRejectionEmail(transactionResult.buyerEmail, transactionResult.quantity, siteUrl);
+        await sendRejectionEmail(
+          transactionResult.buyerEmail,
+          transactionResult.quantity,
+          siteUrl,
+          await getEventBranding(eventId)
+        );
       } catch (mailError: any) {
         console.error('Rejection Mailer execution error:', mailError);
         // Purchase status is updated, but notify admin that mail failed
@@ -182,7 +189,11 @@ export async function POST(req: Request) {
         if (!process.env.SMTP_USER || process.env.SMTP_USER.includes('placeholder')) {
           throw new Error('Las credenciales SMTP (correo) siguen en valores de marcador de posición (placeholder) en tu archivo .env.');
         }
-        await sendTicketsEmail(transactionResult.buyerEmail, ticketsWithQr);
+        await sendTicketsEmail(
+          transactionResult.buyerEmail,
+          ticketsWithQr,
+          await getEventBranding(eventId)
+        );
         
         // Update email_sent status in DB
         await db.purchase.update({

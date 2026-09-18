@@ -79,12 +79,28 @@ export default function CheckoutPage({ params }: { params: Promise<{ slug: strin
   const [loadingCompress, setLoadingCompress] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [ticketPriceCents, setTicketPriceCents] = useState(500000);
+  const [eventName, setEventName] = useState(slug);
+  const [payAlias, setPayAlias] = useState<string | null>(null);
+  const [contactEmail, setContactEmail] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/pricing?slug=${encodeURIComponent(slug)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.ticketPriceCents) setTicketPriceCents(data.ticketPriceCents);
+      })
+      .catch(() => {});
+    fetch(`/api/event?slug=${encodeURIComponent(slug)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.name) setEventName(data.name);
+      })
+      .catch(() => {});
+    fetch(`/api/event-config?slug=${encodeURIComponent(slug)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.payAlias) setPayAlias(data.payAlias);
+        if (data?.contactEmail) setContactEmail(data.contactEmail);
       })
       .catch(() => {});
   }, [slug]);
@@ -292,11 +308,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ slug: strin
           <span>🏆</span>
         </div>
         <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
-          KERMINGO <span className="text-[#D4AF37]">2026</span>
+          {eventName}
         </h1>
-        <p className="mt-2 text-lg font-bold text-slate-700">
-          20 de Junio - Estomba 1942
-        </p>
       </header>
 
       {/* Checkout Form Card */}
@@ -316,12 +329,9 @@ export default function CheckoutPage({ params }: { params: Promise<{ slug: strin
               <li>Realizás la transferencia bancaria por el total de las entradas (${ticketPrice.toLocaleString('es-AR')} por cada una).</li>
               <li>Subís una foto o PDF del comprobante de transferencia bancaria.</li>
               <li>
-                <strong>¡Muy importante!</strong> Una vez que confirmemos tu pago (verificación manual por los Scouts, la cual <strong>no es instantánea</strong> y puede demorar unas horas), te llegará un mail con <strong>un código QR por cada asistente</strong>.
+                <strong>¡Muy importante!</strong> Una vez que confirmemos tu pago (verificación manual por el equipo organizador, la cual <strong>no es instantánea</strong> y puede demorar unas horas), te llegará un mail con <strong>un código QR por cada asistente</strong>.
               </li>
               <li>Cada persona deberá mostrar su código QR desde su celular al ingresar al evento para registrar la entrada.</li>
-              <li className="text-amber-900 font-bold">
-                🎁 Tu entrada viene con un cartón gratis para utilizar en la última ronda del bingo.
-              </li>
             </ol>
           </div>
 
@@ -330,26 +340,25 @@ export default function CheckoutPage({ params }: { params: Promise<{ slug: strin
             <h3 className="mb-3 font-bold text-slate-800 flex items-center gap-2">
               <span>💳</span> Datos de Transferencia Bancaria
             </h3>
-            <p className="mb-1"><strong>Nombre completo:</strong> Guadalupe Sofía Hryb Alvarez</p>
-            <p className="mb-1"><strong>Banco:</strong> Brubank</p>
-            <p className="mb-1"><strong>CBU:</strong> 1430001713038182530011</p>
-            <div className="mb-1 flex items-center gap-2">
-              <p><strong>Alias:</strong> <span className="font-bold text-[#5490c4] bg-blue-50 px-2 py-0.5 rounded border border-blue-200">evento.kermingo</span></p>
-              <button 
-                type="button"
-                onClick={() => navigator.clipboard.writeText('evento.kermingo')}
-                className="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded transition-colors active:scale-95 cursor-pointer font-semibold"
-                title="Copiar Alias"
-              >
-                Copiar
-              </button>
-            </div>
-            <p className="mb-1"><strong>Nº de cuenta:</strong> 1303818253001</p>
-            <p className="mb-1"><strong>CUIT:</strong> 27-45689712-1</p>
+            {payAlias ? (
+              <div className="mb-1 flex items-center gap-2">
+                <p><strong>Alias:</strong> <span className="font-bold text-[#5490c4] bg-blue-50 px-2 py-0.5 rounded border border-blue-200">{payAlias}</span></p>
+                <button
+                  type="button"
+                  onClick={() => payAlias && navigator.clipboard.writeText(payAlias)}
+                  className="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded transition-colors active:scale-95 cursor-pointer font-semibold"
+                  title="Copiar Alias"
+                >
+                  Copiar
+                </button>
+              </div>
+            ) : (
+              <p className="mb-1 text-slate-500">Los datos de pago se informan al confirmar la disponibilidad.</p>
+            )}
+            {contactEmail && <p className="mb-1"><strong>Contacto:</strong> {contactEmail}</p>}
             <p className="mt-3 text-xs text-slate-500 font-semibold border-t border-[#74ACDF]/20 pt-3 leading-relaxed">
               * El valor de la entrada anticipada es de <strong>${ticketPrice.toLocaleString('es-AR')} ARS</strong>. Transferí el total correspondiente y adjuntá el comprobante abajo.
               <br />
-              <span className="text-amber-700 font-bold mt-1 block">🎟️ Cada entrada adquirida incluye de regalo un cartón gratis para la última ronda del bingo.</span>
             </p>
           </div>
 
@@ -423,21 +432,21 @@ export default function CheckoutPage({ params }: { params: Promise<{ slug: strin
               ))}
             </div>
 
-            {/* Referral Scout Name */}
+            {/* Referral Code */}
             <div>
               <label htmlFor="referral" className="block text-sm font-semibold text-slate-700">
-                Nombre del Scout que te invitó <span className="text-slate-400 font-normal">(Opcional)</span>
+                Código de referido de quien te invitó <span className="text-slate-400 font-normal">(Opcional)</span>
               </label>
               <input
                 type="text"
                 id="referral"
                 value={referralCode}
                 onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                placeholder="Ej: MARTINEZ EMILIANO"
+                placeholder="Ej: JUAN2026"
                 className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-800 outline-none transition focus:border-[#74ACDF] focus:ring-2 focus:ring-[#74ACDF]/20 placeholder:uppercase"
               />
               <p className="mt-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                ⚠️ <span className="font-semibold">Aviso:</span> El sistema de referidos está habilitado exclusivamente para los Scouts pertenecientes a la <strong>Unidad Scout Mártires Palotinos</strong>. Ingresá el nombre completo del Scout que te invitó.
+                ⚠️ <span className="font-semibold">Aviso:</span> Si alguien te invitó con un código de referido, ingresalo acá.
               </p>
             </div>
 
@@ -524,7 +533,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ slug: strin
 
             {/* Delay Warning Callout */}
             <p className="text-[11px] text-amber-900 bg-amber-50 border border-amber-200 rounded-xl p-3 text-center leading-relaxed font-semibold">
-              📢 <strong>Nota importante:</strong> La acreditación del pago es verificada de forma manual por los Scouts. El envío de las entradas <strong>no es inmediato</strong> y puede demorar unas horas.
+              📢 <strong>Nota importante:</strong> La acreditación del pago es verificada de forma manual por el equipo organizador. El envío de las entradas <strong>no es inmediato</strong> y puede demorar unas horas.
             </p>
 
             {/* Submit Button */}
