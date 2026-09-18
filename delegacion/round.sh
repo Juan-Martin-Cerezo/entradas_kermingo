@@ -13,7 +13,7 @@ LOG="$HOME/.cache/eventhub/round-$TS.log"
 mkdir -p "$(dirname "$LOG")"
 AGY_MODEL="${AGY_MODEL:-gemini-3.8-flash-medium}"
 MODEL_CC="${MODEL_CC:-meta/muse-spark-1.3-contributor}"
-LINT_BASELINE=48
+LINT_BASELINE=43
 MAX_NUDGES=2
 BOARD="3dfb8e8b-1951-8115-8ec3-cf79edb415c9"
 
