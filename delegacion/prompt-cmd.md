@@ -20,6 +20,15 @@ Plan: `.hermes/plans/2026-09-18_eventhub-multievento.md` — leelo entero antes 
 
 Tablero: Notion DB `EventHub Tasks` = `3dfb8e8b-1951-8115-8ec3-cf79edb415c9`. Via MCP notion.
 
+## Acceso a la base (MCP supabase)
+- Si el MCP `supabase` está configurado (`list_tables`, `execute_sql`, `apply_migration`): úsalo para inspeccionar
+  el schema real y aplicar migraciones. Es **producción**: backup antes de DDL, solo SQL de `prisma/migrations/`,
+  nunca `DROP`/`TRUNCATE`. Si no responde, seguí con código puro.
+
+## Trabajo continuo
+No pidas confirmación: agarrá la siguiente task `Asignado=Junior` / `Status=Sin empezar` y hacela entera
+(incluido commit + push + mover la task a `Review`). Si terminás una y te queda presupuesto de turnos, seguí con la próxima.
+
 ## Tu trabajo
 1. Query de la DB, filtrá `Asignado=Junior` + `Status=Sin empezar`. Trabajá **una task por vez**, en este orden:
    F0 → F1 (constants/scoping/promoter/guard) → F3 (ruteo por slug) → F4 (mailer) → F7 (cuotas) → F8 (plataforma).

@@ -23,6 +23,17 @@ antes de tocar nada — tiene las 5 decisiones de arquitectura y los bloqueantes
 Tablero: Notion DB `EventHub Tasks` = `3dfb8e8b-1951-8115-8ec3-cf79edb415c9`
 (page `EventHub — Entradas Multi-Evento` bajo Second Brain). Via MCP notion.
 
+## Acceso a la base (MCP supabase)
+- Si el MCP `supabase` está configurado, tenés `list_tables`, `list_migrations`, `execute_sql`, `apply_migration`,
+  `get_advisors`, `generate_typescript_types`. Es la base **de producción** (con ventas vivas del Kermingo).
+- Regla dura antes de cualquier DDL: `npx tsx backup-db.ts` (si hay `DATABASE_URL`), y aplicá **solo** el SQL que
+  ya está en `prisma/migrations/*.sql`. Prohibido `DROP`, `TRUNCATE` o borrar filas fuera de la migración acordada.
+- Si el MCP no responde, no inventes: seguí con tareas de código y anotalo.
+
+## Trabajo continuo
+No pidas confirmación ni pidas que Juan corra nada: tomá la siguiente task `Asignado=PM` / `Status=Sin empezar`,
+y cuando el contributor deje algo en `Review`, revisalo dentro de la misma ronda.
+
 ## Tu trabajo (en este orden)
 1. Query de la DB, filtrá `Asignado=PM` y `Status=Sin empezar`. Mové a `En progreso` la primera.
 2. Implementá **F1 schema multi-tenant** y **F2 auth multi-rol** (las tareas marcadas PM).
