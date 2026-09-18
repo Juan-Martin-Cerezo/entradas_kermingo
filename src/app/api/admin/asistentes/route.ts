@@ -4,13 +4,20 @@ import { checkAuth } from '@/lib/auth';
 
 export async function GET(req: Request) {
   try {
-    const isAuthorized = await checkAuth();
+    const { searchParams } = new URL(req.url);
+    const eventId = searchParams.get('eventId');
+    if (!eventId) {
+      return NextResponse.json({ error: 'eventId requerido' }, { status: 400 });
+    }
+
+    const isAuthorized = await checkAuth(eventId);
     if (!isAuthorized) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const tickets = await db.ticket.findMany({
       where: {
+        event_id: eventId,
         purchase: {
           payment_status: 'APPROVED',
         },
@@ -50,19 +57,23 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const isAuthorized = await checkAuth();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { ticketId, action } = await req.json();
+    const { ticketId, action, eventId } = await req.json();
 
     if (!ticketId || !['CHECKIN', 'RESET'].includes(action)) {
       return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 });
     }
 
-    const ticket = await db.ticket.findUnique({
-      where: { id: ticketId },
+    if (!eventId) {
+      return NextResponse.json({ error: 'eventId requerido' }, { status: 400 });
+    }
+
+    const isAuthorized = await checkAuth(eventId);
+    if (!isAuthorized) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const ticket = await db.ticket.findFirst({
+      where: { id: ticketId, event_id: eventId },
     });
 
     if (!ticket) {
@@ -70,7 +81,7 @@ export async function POST(req: Request) {
     }
 
     const updated = await db.ticket.update({
-      where: { id: ticketId },
+      where: { id: ticket.id },
       data: {
         entry_status: action === 'CHECKIN',
         entry_date: action === 'CHECKIN' ? new Date() : null,

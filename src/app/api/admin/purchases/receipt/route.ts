@@ -4,20 +4,25 @@ import { checkAuth } from '@/lib/auth';
 
 export async function GET(req: Request) {
   try {
-    const isAuthorized = await checkAuth();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
+    const eventId = searchParams.get('eventId');
 
     if (!id) {
       return NextResponse.json({ error: 'Missing purchase ID' }, { status: 400 });
     }
 
-    const purchase = await db.purchase.findUnique({
-      where: { id },
+    if (!eventId) {
+      return NextResponse.json({ error: 'eventId requerido' }, { status: 400 });
+    }
+
+    const isAuthorized = await checkAuth(eventId);
+    if (!isAuthorized) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const purchase = await db.purchase.findFirst({
+      where: { id, event_id: eventId },
       select: {
         receipt_url: true,
       },

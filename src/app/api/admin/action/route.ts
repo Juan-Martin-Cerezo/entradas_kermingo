@@ -6,21 +6,25 @@ import { checkAuth } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
-    const isAuthorized = await checkAuth();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { purchaseId, action } = await req.json();
+    const { purchaseId, action, eventId } = await req.json();
 
     if (!purchaseId || !['APPROVE', 'REJECT', 'DELETE', 'RESEND_EMAIL'].includes(action)) {
       return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 });
     }
 
+    if (!eventId) {
+      return NextResponse.json({ error: 'eventId requerido' }, { status: 400 });
+    }
+
+    const isAuthorized = await checkAuth(eventId);
+    if (!isAuthorized) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     // Handle RESEND_EMAIL action
     if (action === 'RESEND_EMAIL') {
-      const purchase = await db.purchase.findUnique({
-        where: { id: purchaseId },
+      const purchase = await db.purchase.findFirst({
+        where: { id: purchaseId, event_id: eventId },
         include: {
           tickets: true,
         },
@@ -74,19 +78,22 @@ export async function POST(req: Request) {
 
     // Handle DELETE action (cascades automatically to Tickets in DB schema)
     if (action === 'DELETE') {
-      await db.purchase.delete({
-        where: { id: purchaseId },
+      const deleted = await db.purchase.deleteMany({
+        where: { id: purchaseId, event_id: eventId },
       });
+      if (deleted.count === 0) {
+        return NextResponse.json({ error: 'Compra no encontrada.' }, { status: 404 });
+      }
       return NextResponse.json({ success: true });
     }
 
     // Execute APPROVE or REJECT inside an atomic transaction with row locking
     const transactionResult = await db.$transaction(async (tx) => {
-      // Lock the row to prevent concurrent modifications
+      // Lock the row to prevent concurrent modifications (scoped to the event)
       const [purchase] = await tx.$queryRaw<any[]>`
-        SELECT id, payment_status, buyer_email, quantity, attendee_names 
+        SELECT id, event_id, payment_status, buyer_email, quantity, attendee_names 
         FROM "Purchase" 
-        WHERE id = ${purchaseId} 
+        WHERE id = ${purchaseId} AND event_id = ${eventId}
         FOR UPDATE
       `;
 
@@ -124,6 +131,7 @@ export async function POST(req: Request) {
         const holderName = names[index] || `Invitado ${index + 1}`;
         return tx.ticket.create({
           data: {
+            event_id: eventId,
             purchase_id: purchaseId,
             holder_name: holderName,
           },

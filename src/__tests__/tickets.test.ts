@@ -8,6 +8,7 @@ vi.mock('@/lib/db', () => ({
     ticket: {
       updateMany: vi.fn(),
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
     },
   },
 }));
@@ -29,6 +30,18 @@ describe('Tickets Validation API', () => {
     expect(data.error).toBe('El ID de la entrada es requerido.');
   });
 
+  it('should return 400 if event ID is missing', async () => {
+    const req = new Request('http://localhost/api/tickets/validate', {
+      method: 'POST',
+      body: JSON.stringify({ ticketId: 'some-uuid' }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toBe('eventId requerido.');
+  });
+
   it('should return 404 if ticket does not exist', async () => {
     // updateMany returns count 0
     vi.mocked(db.ticket.updateMany).mockResolvedValue({ count: 0 });
@@ -37,7 +50,7 @@ describe('Tickets Validation API', () => {
 
     const req = new Request('http://localhost/api/tickets/validate', {
       method: 'POST',
-      body: JSON.stringify({ ticketId: 'non-existent-uuid' }),
+      body: JSON.stringify({ ticketId: 'non-existent-uuid', eventId: 'event-a' }),
     });
 
     const res = await POST(req);
@@ -48,7 +61,7 @@ describe('Tickets Validation API', () => {
 
   it('should return 400 with NO personal details if ticket was already used', async () => {
     vi.mocked(db.ticket.updateMany).mockResolvedValue({ count: 0 });
-    vi.mocked(db.ticket.findUnique).mockResolvedValue({
+    vi.mocked(db.ticket.findFirst).mockResolvedValue({
       id: 'used-uuid',
       entry_status: true,
       entry_date: new Date('2026-05-25T10:00:00Z'),
@@ -58,7 +71,7 @@ describe('Tickets Validation API', () => {
 
     const req = new Request('http://localhost/api/tickets/validate', {
       method: 'POST',
-      body: JSON.stringify({ ticketId: 'used-uuid' }),
+      body: JSON.stringify({ ticketId: 'used-uuid', eventId: 'event-a' }),
     });
 
     const res = await POST(req);
@@ -75,7 +88,7 @@ describe('Tickets Validation API', () => {
     // First updateMany succeeds (returns count 1)
     vi.mocked(db.ticket.updateMany).mockResolvedValue({ count: 1 });
     // Then findUnique returns ticket details
-    vi.mocked(db.ticket.findUnique).mockResolvedValue({
+    vi.mocked(db.ticket.findFirst).mockResolvedValue({
       id: 'valid-uuid',
       entry_status: true,
       entry_date: new Date('2026-05-25T11:00:00Z'),
@@ -87,7 +100,7 @@ describe('Tickets Validation API', () => {
 
     const req = new Request('http://localhost/api/tickets/validate', {
       method: 'POST',
-      body: JSON.stringify({ ticketId: 'valid-uuid' }),
+      body: JSON.stringify({ ticketId: 'valid-uuid', eventId: 'event-a' }),
     });
 
     const res = await POST(req);

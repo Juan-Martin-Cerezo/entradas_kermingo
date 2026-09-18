@@ -3,16 +3,22 @@ import { db } from '@/lib/db';
 
 export async function POST(req: Request) {
   try {
-    const { ticketId } = await req.json();
+    const { ticketId, eventId } = await req.json();
 
     if (!ticketId) {
       return NextResponse.json({ error: 'El ID de la entrada es requerido.' }, { status: 400 });
     }
 
-    // Atomic conditional update to prevent race conditions (double check-in)
+    if (!eventId) {
+      return NextResponse.json({ error: 'eventId requerido.' }, { status: 400 });
+    }
+
+    // Atomic conditional update scoped to the event: a ticket from another
+    // event must answer TICKET NOT FOUND, never burn, to prevent race conditions (double check-in)
     const updateResult = await db.ticket.updateMany({
       where: {
         id: ticketId,
+        event_id: eventId,
         entry_status: false,
       },
       data: {
@@ -21,10 +27,10 @@ export async function POST(req: Request) {
       },
     });
 
-    // If no row was updated, the ticket was either already checked in or doesn't exist
+    // If no row was updated, the ticket was either already checked in or doesn't exist (or belongs to another event)
     if (updateResult.count === 0) {
-      const ticket = await db.ticket.findUnique({
-        where: { id: ticketId },
+      const ticket = await db.ticket.findFirst({
+        where: { id: ticketId, event_id: eventId },
       });
 
       if (!ticket) {
@@ -42,8 +48,8 @@ export async function POST(req: Request) {
     }
 
     // Load ticket details to display on successful check-in
-    const ticket = await db.ticket.findUnique({
-      where: { id: ticketId },
+    const ticket = await db.ticket.findFirst({
+      where: { id: ticketId, event_id: eventId },
       include: {
         purchase: {
           select: {
