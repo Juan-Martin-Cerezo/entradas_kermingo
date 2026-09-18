@@ -61,9 +61,9 @@ VALUES ('00000000-0000-0000-0000-000000000001', 500000, 100000, 'ARS', 'evento.k
 ON CONFLICT ("event_id") DO NOTHING;
 
 -- 6. Add nullable event_id columns to existing tables
-ALTER TABLE "Promoter" ADD COLUMN "event_id" TEXT;
-ALTER TABLE "Purchase" ADD COLUMN "event_id" TEXT;
-ALTER TABLE "Ticket" ADD COLUMN "event_id" TEXT;
+ALTER TABLE "Promoter" ADD COLUMN IF NOT EXISTS "event_id" TEXT;
+ALTER TABLE "Purchase" ADD COLUMN IF NOT EXISTS "event_id" TEXT;
+ALTER TABLE "Ticket" ADD COLUMN IF NOT EXISTS "event_id" TEXT;
 
 -- 7. Backfill existing records to 'kermingo-2026'
 UPDATE "Promoter"
