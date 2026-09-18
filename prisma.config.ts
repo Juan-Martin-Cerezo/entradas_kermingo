@@ -6,9 +6,30 @@ import { defineConfig } from "prisma/config";
 const dbUrl = process.env["DATABASE_URL"] || "";
 const directUrl = process.env["DIRECT_URL"] || "";
 
-// Guard to prevent accidental overwrites/pushes to the wrong database
-if ((dbUrl && !dbUrl.includes("wodzuelvlqontlthdlig")) || (directUrl && !directUrl.includes("wodzuelvlqontlthdlig"))) {
-  console.error("❌ ERROR: DATABASE_URL does not belong to Kermingo! Execution blocked to prevent accidental overwrite.");
+// --- Guard 1: allowlist de proyectos Supabase (antes: substring hardcodeado de Kermingo) ---
+const allowedRefs = (process.env["ALLOWED_DB_PROJECT_REFS"] || "wodzuelvlqontlthdlig")
+  .split(",")
+  .map((r) => r.trim())
+  .filter(Boolean);
+const targets = [dbUrl, directUrl].filter(Boolean);
+const foreign = targets.find((url) => !allowedRefs.some((ref) => url.includes(ref)));
+if (foreign) {
+  console.error(
+    `❌ ERROR: la URL de base de datos no pertenece a un proyecto permitido (${allowedRefs.join(", ")}).\n` +
+      `   Para usar otra DB (staging/tests) exportá ALLOWED_DB_PROJECT_REFS="ref1,ref2".`
+  );
+  process.exit(1);
+}
+
+// --- Guard 2: DDL explícito. Cualquier comando que cambie el schema requiere ALLOW_DB_PUSH=1 ---
+const argv = process.argv.slice(2).join(" ");
+const isSchemaChanging = /(^|\s)(db\s+(push|execute|seed)|migrate|studio)(\s|$)/.test(argv);
+if (isSchemaChanging && process.env["ALLOW_DB_PUSH"] !== "1") {
+  console.error(
+    `❌ ERROR: 'prisma ${argv}' toca el schema/datos y requiere confirmación explícita.\n` +
+      `   Corré: ALLOW_DB_PUSH=1 npx prisma ${argv}\n` +
+      `   (regla pensada para que ningún agente autónomo dispare un push por accidente).`
+  );
   process.exit(1);
 }
 

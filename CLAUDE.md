@@ -21,7 +21,9 @@
 - **Error Handling:** Verify response content-types before calling `res.json()` on fetch. Wrap JSON parsing in try-catch blocks.
 
 ## CRITICAL DATABASE SAFETY RULES (AI & Human Mandatory)
-- **DATABASE SHIELD**: The database endpoint is highly critical. A custom guard is configured in `prisma.config.ts` to block any execution where `DATABASE_URL` does not match the Kermingo production Supabase (`wodzuelvlqontlthdlig`) database.
+- **DATABASE SHIELD #1 (allowlist)**: `prisma.config.ts` blocks any run where `DATABASE_URL`/`DIRECT_URL` does not contain a project ref from `ALLOWED_DB_PROJECT_REFS` (default: `wodzuelvlqontlthdlig`). Staging/tests: export `ALLOWED_DB_PROJECT_REFS="ref1,ref2"`.
+- **DATABASE SHIELD #2 (DDL explícito)**: `prisma db push|execute|seed`, `prisma migrate*` y `prisma studio` requieren `ALLOW_DB_PUSH=1` en el entorno. Sin eso el comando sale con exit 1 y no toca nada — protección contra agentes autónomos corriendo con `--dangerously-skip-permissions`.
 - **DO NOT RUN** `prisma db push` or Prisma migrations pointing to other databases.
 - Always run `npx tsx backup-db.ts` to create a local JSON snapshot in `backups/` before attempting schema changes.
+- Migrations are authored as plain SQL under `prisma/migrations/<timestamp>_<name>/migration.sql` and applied **deliberately** (producción: ventana fuera de venta + backup).
 
