@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Un round de trabajo continuo: PM (agy) -> contributor (command-code) -> verificación dura.
-# Corre EN LA PI. El loop (cron) lo invoca; también se puede correr a mano.
-# Salida: resumen del round. Deja estado en ~/.cache/eventhub/
+# v2: agrega "nudge": si un agente termina su turno sin commits (agy en print mode se va al toque
+# cuando se queda sin nada que hacer y suele gastar el turno en correr un build), se lo re-invoca
+# en la misma conversación (`-c`) con una instrucción imperativa, hasta 2 veces.
+# Corre EN LA PI.
 set -uo pipefail
 REPO="${REPO:-$HOME/entradas_kermingo}"
 cd "$REPO" || exit 1
@@ -12,33 +14,52 @@ LOG="$HOME/.cache/eventhub/round-$TS.log"
 mkdir -p "$(dirname "$LOG")"
 AGY_MODEL="${AGY_MODEL:-gemini-3.8-flash-medium}"
 MODEL_CC="${MODEL_CC:-meta/muse-spark-1.3-contributor}"
-LINT_BASELINE=48   # errores preexistentes del repo (no deben crecer)
+LINT_BASELINE=48
+MAX_NUDGES=2
+BOARD="3dfb8e8b-1951-8115-8ec3-cf79edb415c9"
 
 log() { echo "$@" >>"$LOG"; }
 say() { echo "$@" | tee -a "$LOG"; }
+commits_since_base() { git rev-list "$BASE_HEAD"..HEAD --count 2>/dev/null || echo 0; }
 
 say "== ROUND $TS =="
 git pull --ff-only -q || log "pull: sin cambios remotos"
+BASE_HEAD=$(git rev-parse HEAD)
 log "HEAD previo: $(git log --oneline -1)"
 
-# --- 0. estado inicial, para comparar después ---
-BASE_TESTS=$(npx vitest run 2>&1 | grep -oE "Tests +[0-9]+ passed" | grep -oE "[0-9]+" | head -1)
-BASE_TESTS=${BASE_TESTS:-0}
-BASE_HEAD=$(git rev-parse HEAD)
+NUDGE_PM="No hubo commits en tu intento anterior: quedaste idle sin trabajar. Acción inmediata y única: abrí el tablero Notion (DB EventHub Tasks $BOARD) y tomá la primera task con Asignado=PM y Status=Sin empezar (o una que el contributor haya dejado en Review). Implementala COMPLETA en este turno, corré npx vitest run, commiteá con mensaje convencional, pusheá y mové la task en el tablero. Prohibido terminar el turno sin commits. Si de verdad no existe ninguna task PM pendiente, respondé exactamente NO_PM_TASKS."
+
+NUDGE_CC="No hubo commits en tu intento anterior: quedaste idle sin trabajar. Acción inmediata y única: abrí el tablero Notion (DB EventHub Tasks $BOARD) y tomá la primera task con Asignado=Junior y Status=Sin empezar. Implementala COMPLETA en este turno (código + tests con mocks + npx vitest run verde), commiteá, pusheá y mové la task a Review. Prohibido terminar el turno sin commits. Si no existe ninguna task Junior pendiente, respondé exactamente NO_JUNIOR_TASKS."
 
 # --- 1. PM ---
 log ">> agy $AGY_MODEL"
 timeout 4800 agy -p "$(cat delegacion/prompt-agy.md)" --dangerously-skip-permissions \
   --model "$AGY_MODEL" --print-timeout 60m >>"$LOG" 2>&1
 log "AGY_EXIT=$?"
+N=0
+while [ "$(commits_since_base)" = "0" ] && [ "$N" -lt "$MAX_NUDGES" ]; do
+  N=$((N+1)); log "PM sin commits -> nudge $N"
+  timeout 3000 agy -c -p "$NUDGE_PM" --dangerously-skip-permissions \
+    --model "$AGY_MODEL" --print-timeout 45m >>"$LOG" 2>&1
+  log "AGY_NUDGE${N}_EXIT=$?"
+  grep -q "NO_PM_TASKS" "$LOG" && { log "PM declara que no quedan tasks PM"; break; }
+done
 
 # --- 2. contributor ---
 log ">> command-code $MODEL_CC"
 timeout 4800 command-code -p "$(cat delegacion/prompt-cmd.md)" --trust --dangerously-skip-permissions \
-  --tools-all --skip-onboarding --max-turns 120 -m "$MODEL_CC" >>"$LOG" 2>&1
+  --tools-all --skip-onboarding --max-turns 240 -m "$MODEL_CC" >>"$LOG" 2>&1
 log "CC_EXIT=$?"
+N=0
+while [ "$(commits_since_base)" = "0" ] && [ "$N" -lt "$MAX_NUDGES" ]; do
+  N=$((N+1)); log "contributor sin commits -> nudge $N"
+  timeout 3000 command-code -c -p "$NUDGE_CC" --trust --dangerously-skip-permissions \
+    --tools-all --skip-onboarding --max-turns 240 -m "$MODEL_CC" >>"$LOG" 2>&1
+  log "CC_NUDGE${N}_EXIT=$?"
+  grep -q "NO_JUNIOR_TASKS" "$LOG" && { log "contributor declara que no quedan tasks Junior"; break; }
+done
 
-# --- 3. verificación dura (no nos creemos el reporte de nadie) ---
+# --- 3. verificación dura ---
 NEW_HEAD=$(git rev-parse HEAD)
 DIRTY=$(git status --porcelain | wc -l)
 TESTS_RAW=$(npx vitest run 2>&1 | tail -6)
@@ -54,9 +75,8 @@ STATUS=verde
 [ "$LINT" -gt "$LINT_BASELINE" ] && STATUS=rojo
 [ "$DIRTY" != "0" ] && STATUS="sucio"
 
-say "COMMITS_nuevos=$(git rev-list "$BASE_HEAD".."$NEW_HEAD" --count 2>/dev/null || echo '?') | tests=${TESTS}(prev $BASE_TESTS, failed=$FAILED) | lint=${LINT}/${LINT_BASELINE} | build=$BUILD_OK | working_tree_sucio=$DIRTY | estado=$STATUS"
+say "COMMITS_nuevos=$(commits_since_base) | tests=$TESTS (failed=$FAILED) | lint=$LINT/$LINT_BASELINE | build=$BUILD_OK | sucio=$DIRTY | estado=$STATUS"
 say "log: $LOG"
-
 if [ "$STATUS" != "verde" ]; then
   say "⛔ Ronda detenida: el repo no quedó sano (ver $LOG y /tmp/eventhub-build-$TS.log). No lanzo otra ronda hasta que se arregle."
   touch "$HOME/.cache/eventhub/BLOCKED"
