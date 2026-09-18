@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { MAX_FILE_SIZE, ALLOWED_FILE_TYPES } from '@/lib/constants';
+import { uploadReceipt } from '@/lib/storage';
 
 export async function POST(req: Request) {
   try {
@@ -82,12 +83,16 @@ export async function POST(req: Request) {
       promoterId = promoter.id;
     }
 
-    // Convert receipt to base64 data URL (Vercel serverless has read-only filesystem)
+    // Upload receipt via configured STORAGE_MODE (r2, blob, or db fallback)
     const bytes = await receiptFile.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const base64 = buffer.toString('base64');
     const mimeType = receiptFile.type || 'application/octet-stream';
-    const receiptUrl = `data:${mimeType};base64,${base64}`;
+    const { url: receiptUrl } = await uploadReceipt({
+      eventId,
+      fileBuffer: buffer,
+      mimeType,
+      filename: receiptFile.name,
+    });
 
     // Create Purchase
     const purchase = await db.purchase.create({

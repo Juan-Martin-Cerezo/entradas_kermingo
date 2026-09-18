@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import QRCode from 'qrcode';
 import { sendTicketsEmail, sendRejectionEmail, getEventBranding } from '@/lib/mailer';
 import { checkAuth } from '@/lib/auth';
+import { deleteReceipt } from '@/lib/storage';
 
 export async function POST(req: Request) {
   try {
@@ -80,6 +81,15 @@ export async function POST(req: Request) {
 
     // Handle DELETE action (cascades automatically to Tickets in DB schema)
     if (action === 'DELETE') {
+      const purchase = await db.purchase.findFirst({
+        where: { id: purchaseId, event_id: eventId },
+        select: { receipt_url: true },
+      });
+
+      if (purchase?.receipt_url) {
+        await deleteReceipt(purchase.receipt_url);
+      }
+
       const deleted = await db.purchase.deleteMany({
         where: { id: purchaseId, event_id: eventId },
       });
@@ -93,7 +103,7 @@ export async function POST(req: Request) {
     const transactionResult = await db.$transaction(async (tx) => {
       // Lock the row to prevent concurrent modifications (scoped to the event)
       const [purchase] = await tx.$queryRaw<any[]>`
-        SELECT id, event_id, payment_status, buyer_email, quantity, attendee_names 
+        SELECT id, event_id, payment_status, buyer_email, quantity, attendee_names, receipt_url 
         FROM "Purchase" 
         WHERE id = ${purchaseId} AND event_id = ${eventId}
         FOR UPDATE
@@ -110,8 +120,13 @@ export async function POST(req: Request) {
       if (action === 'REJECT') {
         await tx.purchase.update({
           where: { id: purchaseId },
-          data: { payment_status: 'REJECTED' },
+          data: { payment_status: 'REJECTED', receipt_url: '' },
         });
+
+        if (purchase.receipt_url) {
+          await deleteReceipt(purchase.receipt_url);
+        }
+
         return { action, buyerEmail: purchase.buyer_email, quantity: purchase.quantity };
       }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { checkAuth } from '@/lib/auth';
+import { getReceiptUrl } from '@/lib/storage';
 
 export async function GET(req: Request) {
   try {
@@ -32,7 +33,12 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Purchase not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ receipt_url: purchase.receipt_url });
+    if (!purchase.receipt_url) {
+      return NextResponse.json({ error: 'El comprobante no está disponible o fue eliminado.' }, { status: 404 });
+    }
+
+    const viewableUrl = await getReceiptUrl(purchase.receipt_url);
+    return NextResponse.json({ receipt_url: viewableUrl });
   } catch (error: any) {
     console.error('Fetch receipt error:', error);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
