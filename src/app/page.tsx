@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { TICKET_PRICE, MAX_FILE_SIZE } from '@/lib/constants';
+import { useState, useEffect } from 'react';
+import { MAX_FILE_SIZE, DEFAULT_EVENT_SLUG } from '@/lib/constants';
 
 const compressImage = (file: File, maxWidth = 1200, maxHeight = 1200, quality = 0.6): Promise<File> => {
   return new Promise((resolve, reject) => {
@@ -77,8 +77,19 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [loadingCompress, setLoadingCompress] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [ticketPriceCents, setTicketPriceCents] = useState(500000);
 
-  const totalPrice = quantity * TICKET_PRICE;
+  useEffect(() => {
+    fetch(`/api/pricing?slug=${DEFAULT_EVENT_SLUG}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.ticketPriceCents) setTicketPriceCents(data.ticketPriceCents);
+      })
+      .catch(() => {});
+  }, []);
+
+  const ticketPrice = ticketPriceCents / 100;
+  const totalPrice = quantity * ticketPrice;
 
   const handleQuantityChange = (newQty: number) => {
     setQuantity(newQty);
@@ -300,7 +311,7 @@ export default function CheckoutPage() {
             </h3>
             <ol className="list-decimal list-inside space-y-2 text-slate-700 text-xs font-semibold">
               <li>Completás tus datos y los nombres de las personas que van a asistir.</li>
-              <li>Realizás la transferencia bancaria por el total de las entradas (${TICKET_PRICE.toLocaleString('es-AR')} por cada una).</li>
+              <li>Realizás la transferencia bancaria por el total de las entradas (${ticketPrice.toLocaleString('es-AR')} por cada una).</li>
               <li>Subís una foto o PDF del comprobante de transferencia bancaria.</li>
               <li>
                 <strong>¡Muy importante!</strong> Una vez que confirmemos tu pago (verificación manual por los Scouts, la cual <strong>no es instantánea</strong> y puede demorar unas horas), te llegará un mail con <strong>un código QR por cada asistente</strong>.
@@ -334,7 +345,7 @@ export default function CheckoutPage() {
             <p className="mb-1"><strong>Nº de cuenta:</strong> 1303818253001</p>
             <p className="mb-1"><strong>CUIT:</strong> 27-45689712-1</p>
             <p className="mt-3 text-xs text-slate-500 font-semibold border-t border-[#74ACDF]/20 pt-3 leading-relaxed">
-              * El valor de la entrada anticipada es de <strong>${TICKET_PRICE.toLocaleString('es-AR')} ARS</strong>. Transferí el total correspondiente y adjuntá el comprobante abajo.
+              * El valor de la entrada anticipada es de <strong>${ticketPrice.toLocaleString('es-AR')} ARS</strong>. Transferí el total correspondiente y adjuntá el comprobante abajo.
               <br />
               <span className="text-amber-700 font-bold mt-1 block">🎟️ Cada entrada adquirida incluye de regalo un cartón gratis para la última ronda del bingo.</span>
             </p>

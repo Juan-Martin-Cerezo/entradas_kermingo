@@ -1,16 +1,25 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { checkAuth } from '@/lib/auth';
-import { TICKET_PRICE } from '@/lib/constants';
+import { getEventPricing } from '@/lib/pricing';
 
 export async function GET(req: Request) {
   try {
-    const isAuthorized = await checkAuth();
+    const { searchParams } = new URL(req.url);
+    const eventId = searchParams.get('eventId');
+    if (!eventId) {
+      return NextResponse.json({ error: 'eventId requerido' }, { status: 400 });
+    }
+
+    const isAuthorized = await checkAuth(eventId);
     if (!isAuthorized) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const pricing = await getEventPricing(eventId);
+
     const purchases = await db.purchase.findMany({
+      where: { event_id: eventId },
       select: {
         quantity: true,
         payment_status: true,
@@ -37,7 +46,7 @@ export async function GET(req: Request) {
       }
     });
 
-    const totalEarnings = approvedTickets * TICKET_PRICE;
+    const totalEarningsCents = approvedTickets * pricing.ticketPriceCents;
 
     return NextResponse.json({
       approvedTickets,
@@ -46,7 +55,9 @@ export async function GET(req: Request) {
       approvedPurchasesCount,
       pendingPurchasesCount,
       rejectedPurchasesCount,
-      totalEarnings,
+      totalEarningsCents,
+      ticketPriceCents: pricing.ticketPriceCents,
+      currency: pricing.currency,
     });
   } catch (error: any) {
     console.error('Fetch stats error:', error);

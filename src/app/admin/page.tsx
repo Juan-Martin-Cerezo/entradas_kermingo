@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { TICKET_PRICE } from '@/lib/constants';
 
 interface Promoter {
   id: string;
@@ -29,7 +28,9 @@ interface Stats {
   approvedPurchasesCount: number;
   pendingPurchasesCount: number;
   rejectedPurchasesCount: number;
-  totalEarnings: number;
+  totalEarningsCents: number;
+  ticketPriceCents: number;
+  currency: string;
 }
 
 export default function AdminDashboard() {
@@ -274,7 +275,7 @@ export default function AdminDashboard() {
             <div className="rounded-2xl border-4 border-emerald-500 bg-white p-5 shadow-md text-center">
               <span className="text-slate-400 text-[10px] sm:text-xs font-bold uppercase block">Recaudado (Total)</span>
               <span className="text-xl sm:text-3xl font-extrabold text-emerald-600 mt-1">
-                ${stats.totalEarnings.toLocaleString('es-AR')}
+                ${(stats.totalEarningsCents / 100).toLocaleString('es-AR')}
               </span>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm text-center">
@@ -402,7 +403,7 @@ export default function AdminDashboard() {
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500">Total pagado:</span>
                     <span className="font-extrabold text-[#D4AF37]">
-                      ${(purchase.quantity * TICKET_PRICE).toLocaleString('es-AR')}
+                      ${((purchase.quantity * (stats?.ticketPriceCents ?? 0)) / 100).toLocaleString('es-AR')}
                     </span>
                   </div>
 

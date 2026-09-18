@@ -8,7 +8,7 @@ interface ReferidoData {
   name: string;
   referralCode: string;
   totalTickets: number;
-  commission: number;
+  commissionCents: number;
 }
 
 export default function ReferidosPage() {
@@ -74,7 +74,7 @@ export default function ReferidosPage() {
     setReport([]);
   };
 
-  const totalCommissions = report.reduce((sum, item) => sum + item.commission, 0);
+  const totalCommissions = report.reduce((sum, item) => sum + item.commissionCents / 100, 0);
   const totalTicketsReferred = report.reduce((sum, item) => sum + item.totalTickets, 0);
 
   if (!isAuthorized) {
@@ -198,7 +198,7 @@ export default function ReferidosPage() {
                       <td className="px-6 py-4 font-bold text-slate-800 capitalize">Scout {item.name}</td>
                       <td className="px-6 py-4 font-mono text-xs font-bold text-[#437fb2]">{item.referralCode}</td>
                       <td className="px-6 py-4 text-center font-bold text-slate-700">{item.totalTickets}</td>
-                      <td className="px-6 py-4 text-right font-extrabold text-emerald-600">${item.commission.toLocaleString('es-AR')}</td>
+                      <td className="px-6 py-4 text-right font-extrabold text-emerald-600">${(item.commissionCents / 100).toLocaleString('es-AR')}</td>
                     </tr>
                   ))}
                 </tbody>
