@@ -1,35 +1,97 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import {
+  signSession,
+  verifySuperadminCredentials,
+  verifyPassword,
+  SESSION_COOKIE_NAME,
+  LEGACY_COOKIE_NAME,
+} from '@/lib/auth';
+import { db } from '@/lib/db';
 
 export async function POST(req: Request) {
   try {
-    const { password } = await req.json();
-    const adminPassword = process.env.ADMIN_PASSWORD;
+    const body = await req.json();
+    const { email, password, slug } = body;
 
-    if (!adminPassword) {
-      console.error('ADMIN_PASSWORD environment variable is not set');
-      return NextResponse.json({ error: 'Configuración de servidor incompleta.' }, { status: 500 });
+    if (!password) {
+      return NextResponse.json({ error: 'Contraseña requerida.' }, { status: 400 });
     }
 
-    if (password !== adminPassword) {
-      return NextResponse.json({ error: 'Contraseña incorrecta.' }, { status: 401 });
+    // 1. Check superadmin credentials
+    if (verifySuperadminCredentials(email, password)) {
+      const sessionToken = await signSession({
+        role: 'superadmin',
+        email: email || process.env.SUPERADMIN_EMAIL || 'superadmin@eventhub.app',
+      });
+
+      const response = NextResponse.json({ success: true, role: 'superadmin' });
+
+      response.cookies.set(SESSION_COOKIE_NAME, sessionToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      });
+
+      // Maintain legacy admin_session cookie
+      const legacyToken = crypto
+        .createHash('sha256')
+        .update(process.env.ADMIN_PASSWORD || password)
+        .digest('hex');
+
+      response.cookies.set(LEGACY_COOKIE_NAME, legacyToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7,
+      });
+
+      return response;
     }
 
-    const sessionToken = crypto.createHash('sha256').update(adminPassword).digest('hex');
+    // 2. Check EventOwner credentials if email is provided
+    if (email) {
+      const owner = await db.eventOwner.findUnique({
+        where: { email: String(email).toLowerCase() },
+        include: { event: true },
+      });
 
-    const response = NextResponse.json({ success: true });
-    
-    // Set HttpOnly, Secure, SameSite=Strict cookie
-    response.cookies.set('admin_session', sessionToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    });
+      if (owner && (await verifyPassword(owner.password_hash, password))) {
+        if (slug && owner.event.slug !== slug) {
+          return NextResponse.json({ error: 'Credenciales inválidas para este evento.' }, { status: 403 });
+        }
 
-    return response;
-  } catch (error: any) {
+        const sessionToken = await signSession({
+          role: 'owner',
+          eventId: owner.event_id,
+          eventSlug: owner.event.slug,
+          email: owner.email,
+        });
+
+        const response = NextResponse.json({
+          success: true,
+          role: 'owner',
+          eventId: owner.event_id,
+          eventSlug: owner.event.slug,
+        });
+
+        response.cookies.set(SESSION_COOKIE_NAME, sessionToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 7,
+        });
+
+        return response;
+      }
+    }
+
+    return NextResponse.json({ error: 'Credenciales inválidas.' }, { status: 401 });
+  } catch (error: unknown) {
     console.error('Login error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
