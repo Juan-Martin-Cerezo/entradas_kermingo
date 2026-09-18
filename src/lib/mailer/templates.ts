@@ -152,3 +152,59 @@ export function buildRejectionHtml(branding: EventBranding, quantity: number, si
     </html>
   `;
 }
+
+export function buildInviteHtml(eventName: string, inviteUrl: string): string {
+  const name = escapeHtml(eventName);
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Invitación para administrar ${name} - EventHub</title>
+      </head>
+      <body style="background-color: #f3f8fc; margin: 0; padding: 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333333;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 2px solid #74ACDF;">
+          <!-- Header -->
+          <div style="background-color: #74ACDF; background-image: linear-gradient(135deg, #74ACDF 0%, #a5d3f7 100%); padding: 30px 20px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 1.8rem; letter-spacing: 1px; font-family: sans-serif; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">
+              EventHub
+            </h1>
+            <p style="color: #ffffff; margin: 5px 0 0 0; font-size: 1rem; font-family: sans-serif; opacity: 0.9;">
+              Invitación de Organizador
+            </p>
+          </div>
+
+          <!-- Content -->
+          <div style="padding: 30px 20px;">
+            <h2 style="color: #333333; font-family: sans-serif; margin-top: 0; font-size: 1.3rem;">¡Te damos la bienvenida!</h2>
+            <p style="font-size: 1rem; line-height: 1.5; color: #555555; font-family: sans-serif;">
+              Has sido invitado/a como organizador/a del evento <strong>${name}</strong> en la plataforma EventHub.
+            </p>
+            <p style="font-size: 0.95rem; line-height: 1.5; color: #555555; font-family: sans-serif;">
+              Para activar tu cuenta y configurar tu contraseña de acceso al panel administrativo, ingresá al siguiente enlace:
+            </p>
+
+            <div style="margin: 30px 0; text-align: center;">
+              <a href="${inviteUrl}" style="display: inline-block; background-color: #74ACDF; color: #ffffff; text-decoration: none; padding: 14px 28px; font-weight: bold; border-radius: 8px; font-size: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                🔐 Activar mi cuenta y definir contraseña
+              </a>
+            </div>
+
+            <p style="font-size: 0.85rem; line-height: 1.4; color: #888888; font-family: sans-serif; text-align: center; border-top: 1px solid #eeeeee; padding-top: 20px; margin-top: 30px;">
+              ⚠️ Este enlace es de <strong>un solo uso</strong> y expirará en <strong>24 horas</strong>. Si no reconocés esta invitación, podés ignorar este correo.
+            </p>
+          </div>
+
+          <!-- Footer -->
+          <div style="background-color: #f7fafc; padding: 15px; text-align: center; border-top: 1px solid #eeeeee;">
+            <p style="margin: 0; font-size: 0.8rem; color: #aaaaaa; font-family: sans-serif;">
+              EventHub · Infraestructura de Entradas Multi-Evento
+            </p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+}
+

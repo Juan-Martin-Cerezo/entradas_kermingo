@@ -7,10 +7,12 @@ import {
   LEGACY_COOKIE_NAME,
 } from './session';
 
-export type { Role, SessionPayload };
+export type { Role, SessionPayload, InviteTokenPayload } from './session';
 export {
   signSession,
   verifySession,
+  signInviteToken,
+  verifyInviteToken,
   getSessionFromCookies,
   getSessionFromRequest,
   SESSION_COOKIE_NAME,

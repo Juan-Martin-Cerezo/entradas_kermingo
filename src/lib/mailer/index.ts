@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 import { db } from '../db';
-import { buildRejectionHtml, buildTicketsHtml, type EventBranding, type TicketInfo } from './templates';
+import { buildRejectionHtml, buildTicketsHtml, buildInviteHtml, type EventBranding, type TicketInfo } from './templates';
 
 export type { EventBranding, TicketInfo };
 
@@ -94,6 +94,23 @@ export async function sendRejectionEmail(
     replyTo: resolveReplyTo(resolved),
     to: buyerEmail,
     subject: `Compra de Entradas Rechazada - ${resolved.name}`,
+    html: htmlContent,
+  };
+
+  return transporter.sendMail(mailOptions);
+}
+
+export async function sendInviteEmail(
+  ownerEmail: string,
+  eventName: string,
+  inviteUrl: string
+) {
+  const htmlContent = buildInviteHtml(eventName, inviteUrl);
+
+  const mailOptions = {
+    from: PLATFORM_FROM,
+    to: ownerEmail,
+    subject: `Invitación para administrar ${eventName} en EventHub`,
     html: htmlContent,
   };
 

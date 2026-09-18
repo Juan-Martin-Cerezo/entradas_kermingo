@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getSessionFromRequest } from '@/lib/session';
-import { DEFAULT_EVENT_SLUG } from '@/lib/constants';
+import { DEFAULT_EVENT_SLUG, RESERVED_SLUGS } from '@/lib/constants';
 
 async function sha256(message: string): Promise<string> {
   const msgBuffer = new TextEncoder().encode(message);
@@ -10,15 +10,6 @@ async function sha256(message: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-const RESERVED_SLUGS = new Set([
-  'api',
-  '_next',
-  'static',
-  'favicon.ico',
-  'eventos',
-  'admin',
-  'escaner',
-]);
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

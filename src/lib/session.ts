@@ -11,6 +11,14 @@ export interface SessionPayload {
   exp: number; // Unix timestamp in seconds
 }
 
+export interface InviteTokenPayload {
+  type: 'owner_invite';
+  email: string;
+  eventId: string;
+  eventSlug: string;
+  exp: number; // Unix timestamp in seconds
+}
+
 export const SESSION_COOKIE_NAME = 'eventhub_session';
 export const LEGACY_COOKIE_NAME = 'admin_session';
 
@@ -149,3 +157,82 @@ export async function getSessionFromRequest(request: Request | NextRequest): Pro
     return null;
   }
 }
+
+export async function signInviteToken(
+  payload: { email: string; eventId: string; eventSlug: string },
+  expiresInSeconds: number = 24 * 60 * 60, // 24 hours
+  secret: string = getAuthSecret()
+): Promise<string> {
+  const exp = Math.floor(Date.now() / 1000) + expiresInSeconds;
+  const fullPayload: InviteTokenPayload = {
+    type: 'owner_invite',
+    email: payload.email.toLowerCase(),
+    eventId: payload.eventId,
+    eventSlug: payload.eventSlug,
+    exp,
+  };
+
+  const encoder = new TextEncoder();
+  const header = { alg: 'HS256', typ: 'JWT' };
+
+  const encodedHeader = base64UrlEncode(encoder.encode(JSON.stringify(header)));
+  const encodedPayload = base64UrlEncode(encoder.encode(JSON.stringify(fullPayload)));
+  const data = `${encodedHeader}.${encodedPayload}`;
+
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(data));
+  const encodedSignature = base64UrlEncode(new Uint8Array(signatureBuffer));
+
+  return `${data}.${encodedSignature}`;
+}
+
+export async function verifyInviteToken(
+  token: string,
+  secret: string = getAuthSecret()
+): Promise<InviteTokenPayload | null> {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+
+    const [encodedHeader, encodedPayload, encodedSignature] = parts;
+    const data = `${encodedHeader}.${encodedPayload}`;
+
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify']
+    );
+
+    const sigBytes = base64UrlToBytes(encodedSignature);
+    const isValid = await crypto.subtle.verify('HMAC', key, sigBytes as BufferSource, encoder.encode(data));
+    if (!isValid) return null;
+
+    const payloadJson = base64UrlDecode(encodedPayload);
+    const payload = JSON.parse(payloadJson) as InviteTokenPayload;
+
+    if (payload.type !== 'owner_invite') {
+      return null;
+    }
+
+    // Check 24h expiration
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp && payload.exp < now) {
+      return null;
+    }
+
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
