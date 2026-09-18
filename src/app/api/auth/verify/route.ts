@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { verifyInviteToken } from '@/lib/auth';
+import {
+  verifyInviteToken,
+  signSession,
+  SESSION_COOKIE_NAME,
+} from '@/lib/auth';
 
 export async function GET(req: Request) {
   try {
@@ -49,12 +53,29 @@ export async function GET(req: Request) {
       data: { invite_token: null },
     });
 
-    return NextResponse.json({
+    const sessionToken = await signSession({
+      role: 'owner',
+      eventId: owner.event_id,
+      eventSlug: owner.event.slug,
+      email: owner.email,
+    });
+
+    const response = NextResponse.json({
       verified: true,
       email: owner.email,
       eventName: owner.event.name,
       eventSlug: owner.event.slug,
     });
+
+    response.cookies.set(SESSION_COOKIE_NAME, sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+    });
+
+    return response;
   } catch (error: unknown) {
     console.error('Error verificando email:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

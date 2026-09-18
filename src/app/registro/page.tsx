@@ -4,6 +4,15 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '');
+}
+
 function RegistroContent() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
@@ -19,6 +28,7 @@ function RegistroContent() {
 
   const [eventName, setEventName] = useState('');
   const [newSlug, setNewSlug] = useState('');
+  const [slugTouched, setSlugTouched] = useState(false);
   const [fecha, setFecha] = useState('');
   const [ticketPricePesos, setTicketPricePesos] = useState('5000');
   const [payAlias, setPayAlias] = useState('');
@@ -168,7 +178,13 @@ function RegistroContent() {
                 type="text"
                 required
                 value={eventName}
-                onChange={(e) => setEventName(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setEventName(val);
+                  if (!slugTouched) {
+                    setNewSlug(slugify(val));
+                  }
+                }}
                 placeholder="Fiesta de Fin de Año 2026"
                 className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-800 outline-none transition focus:border-[#74ACDF] focus:ring-2 focus:ring-[#74ACDF]/20"
               />
@@ -182,7 +198,10 @@ function RegistroContent() {
                 type="text"
                 required
                 value={newSlug}
-                onChange={(e) => setNewSlug(e.target.value)}
+                onChange={(e) => {
+                  setSlugTouched(true);
+                  setNewSlug(e.target.value);
+                }}
                 placeholder="fiesta-fin-de-ano-2026"
                 className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-800 outline-none transition focus:border-[#74ACDF] focus:ring-2 focus:ring-[#74ACDF]/20"
               />

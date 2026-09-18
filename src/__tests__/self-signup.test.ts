@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { cookies } from 'next/headers';
-import { signSession, signInviteToken, verifyInviteToken } from '@/lib/auth';
+import {
+  signSession,
+  verifySession,
+  signInviteToken,
+  verifyInviteToken,
+  SESSION_COOKIE_NAME,
+} from '@/lib/auth';
 import {
   checkSignupRateLimit,
   clearSignupRateLimitState,
@@ -284,6 +290,12 @@ describe('F14 Registro self-service de dueños', () => {
         where: { id: 'owner-1' },
         data: { invite_token: null },
       });
+      const cookie = res.cookies.get(SESSION_COOKIE_NAME);
+      expect(cookie).toBeDefined();
+      const session = await verifySession(cookie!.value);
+      expect(session?.role).toBe('owner');
+      expect(session?.eventId).toBe('ev-1');
+      expect(session?.eventSlug).toBe('mi-evento-x1y2z3');
     });
 
     it('un token ya usado falla (lookup en DB da null)', async () => {
