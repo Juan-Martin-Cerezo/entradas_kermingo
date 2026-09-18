@@ -215,7 +215,24 @@ export default function AdminDashboard({ params }: { params: Promise<{ slug: str
     setStats(null);
   };
 
-  const filteredPurchases = purchases.filter((p) => p.payment_status === activeTab);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredPurchases = purchases.filter((p) => {
+    if (p.payment_status !== activeTab) return false;
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return true;
+    let names = '';
+    try {
+      const parsed = JSON.parse(p.attendee_names);
+      if (Array.isArray(parsed)) names = parsed.join(' ').toLowerCase();
+    } catch {
+      names = '';
+    }
+    return p.buyer_email.toLowerCase().includes(q) || names.includes(q);
+  });
+
+  const exportHref = (tipo: 'ventas' | 'asistentes') =>
+    eventId ? `/api/admin/export?eventId=${encodeURIComponent(eventId)}&tipo=${tipo}` : '#';
 
   if (!isAuthorized) {
     return (
@@ -308,6 +325,47 @@ export default function AdminDashboard({ params }: { params: Promise<{ slug: str
             </div>
           </section>
         )}
+
+        {/* Search + export */}
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <input
+            type="search"
+            placeholder="Buscar por email o nombre..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full flex-1 rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-800 outline-none transition focus:border-[#74ACDF] focus:ring-2 focus:ring-[#74ACDF]/20"
+          />
+          <div className="flex gap-2">
+            <a
+              href={exportHref('ventas')}
+              className="rounded-xl border border-emerald-500 bg-white px-4 py-2.5 text-sm font-bold text-emerald-600 hover:bg-emerald-50 transition whitespace-nowrap"
+            >
+              ⬇ CSV ventas
+            </a>
+            <a
+              href={exportHref('asistentes')}
+              className="rounded-xl border border-[#74ACDF] bg-white px-4 py-2.5 text-sm font-bold text-[#437fb2] hover:bg-[#74ACDF]/5 transition whitespace-nowrap"
+            >
+              ⬇ CSV asistentes
+            </a>
+          </div>
+        </div>
+
+        {/* Quick links: escáner + formulario público */}
+        <div className="mb-6 flex flex-wrap gap-2">
+          <Link
+            href={`/${slug}/escaner`}
+            className="rounded-xl bg-[#74ACDF] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#5490c4] transition"
+          >
+            📷 Abrir escáner
+          </Link>
+          <Link
+            href={`/${slug}`}
+            className="rounded-xl bg-[#D4AF37] px-4 py-2.5 text-sm font-bold text-white hover:opacity-90 transition"
+          >
+            🎟️ Ver formulario público
+          </Link>
+        </div>
 
         {/* Tabbed Interface */}
         <div className="mb-6 flex border-b border-slate-200 overflow-x-auto whitespace-nowrap">

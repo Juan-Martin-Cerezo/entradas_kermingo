@@ -40,7 +40,7 @@ export default function ReferidosPage({ params }: { params: Promise<{ slug: stri
       const data = await res.json();
       setReport(data);
       setIsAuthorized(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setIsAuthorized(false);
     } finally {
       setLoading(false);
@@ -67,8 +67,8 @@ export default function ReferidosPage({ params }: { params: Promise<{ slug: stri
         throw new Error(data.error || 'Contraseña incorrecta.');
       }
       await verifyAndFetch();
-    } catch (err: any) {
-      setError(err.message || 'Error de autenticación.');
+    } catch (err: unknown) {
+      setError((err instanceof Error ? err.message : '') || 'Error de autenticación.');
       setIsAuthorized(false);
     } finally {
       setLoading(false);
@@ -88,6 +88,80 @@ export default function ReferidosPage({ params }: { params: Promise<{ slug: stri
 
   const totalCommissions = report.reduce((sum, item) => sum + item.commissionCents / 100, 0);
   const totalTicketsReferred = report.reduce((sum, item) => sum + item.totalTickets, 0);
+
+  const [newName, setNewName] = useState('');
+  const [newCode, setNewCode] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formLoading, setFormLoading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [editingCode, setEditingCode] = useState('');
+
+  const referralLink = (code: string) =>
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/${slug}?ref=${encodeURIComponent(code)}`
+      : `/${slug}?ref=${encodeURIComponent(code)}`;
+
+  const refresh = () => verifyAndFetch(eventId ?? undefined);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!eventId) return;
+    setFormLoading(true);
+    setFormError(null);
+    try {
+      const res = await fetch('/api/admin/referidos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId, name: newName, referralCode: newCode }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || 'No se pudo crear.');
+      setNewName('');
+      setNewCode('');
+      await refresh();
+    } catch (err: unknown) {
+      setFormError((err instanceof Error ? err.message : '') || 'Error al crear.');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleUpdate = async (id: string) => {
+    if (!eventId) return;
+    setFormError(null);
+    try {
+      const res = await fetch('/api/admin/referidos', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId, promoterId: id, name: editingName, referralCode: editingCode }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || 'No se pudo guardar.');
+      setEditingId(null);
+      await refresh();
+    } catch (err: unknown) {
+      setFormError((err instanceof Error ? err.message : '') || 'Error al guardar.');
+    }
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!eventId) return;
+    if (!confirm(`¿Eliminar a ${name}? Sus compras quedan sin referido.`)) return;
+    setFormError(null);
+    try {
+      const res = await fetch('/api/admin/referidos', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId, promoterId: id }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || 'No se pudo eliminar.');
+      await refresh();
+    } catch (err: unknown) {
+      setFormError((err instanceof Error ? err.message : '') || 'Error al eliminar.');
+    }
+  };
 
   if (!isAuthorized) {
     return (
