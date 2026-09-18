@@ -46,6 +46,10 @@ Rutas legacy (`/admin`, `/escaner`) redirigen 308 a `/`: **no existe un evento p
 
 ---
 
+## 📧 Emails (SMTP y entregabilidad)
+
+Si los mails no llegan o caen en spam: `docs/email-deliverability.md` (diagnóstico en 3 pasos con `/api/admin/test-email`, SPF/DKIM/DMARC y por qué el SMTP de una cuenta personal no sirve para producción).
+
 ## 🖼️ Capturas
 
 Capturas reales de una instancia en producción (generadas con `scripts/` del repo +
