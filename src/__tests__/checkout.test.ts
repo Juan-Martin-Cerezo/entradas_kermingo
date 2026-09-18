@@ -1,9 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST } from '@/app/api/checkout/route';
+import { db } from '@/lib/db';
 
 // Mock the prisma database client
 vi.mock('@/lib/db', () => ({
   db: {
+    event: {
+      findUnique: vi.fn(),
+    },
     promoter: {
       findUnique: vi.fn(),
       create: vi.fn(),
@@ -17,7 +21,17 @@ vi.mock('@/lib/db', () => ({
 describe('Checkout API', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(db.event.findUnique).mockResolvedValue({
+      id: 'event-a',
+      status: 'ON_SALE',
+    } as never);
   });
+
+  function baseForm() {
+    const formData = new FormData();
+    formData.append('eventSlug', 'evento-a');
+    return formData;
+  }
 
   it('should return 400 if required fields are missing', async () => {
     const formData = new FormData();
@@ -33,7 +47,7 @@ describe('Checkout API', () => {
   });
 
   it('should return 400 if file is too large', async () => {
-    const formData = new FormData();
+    const formData = baseForm();
     formData.append('email', 'test@test.com');
     formData.append('quantity', '1');
     formData.append('attendeeNames', JSON.stringify(['Test User']));
@@ -56,7 +70,7 @@ describe('Checkout API', () => {
   });
 
   it('should return 400 if file type is invalid', async () => {
-    const formData = new FormData();
+    const formData = baseForm();
     formData.append('email', 'test@test.com');
     formData.append('quantity', '1');
     formData.append('attendeeNames', JSON.stringify(['Test User']));

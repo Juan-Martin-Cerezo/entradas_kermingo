@@ -11,10 +11,30 @@ export async function POST(req: Request) {
     const receiptFile = formData.get('receipt') as File | null;
     const attendeeNamesStr = formData.get('attendeeNames') as string; // JSON array of names
     const dietaryPreferences = formData.get('dietaryPreferences') as string | null;
+    const eventSlug = formData.get('eventSlug') as string | null;
 
     if (!email || !quantityStr || !receiptFile || !attendeeNamesStr) {
       return NextResponse.json({ error: 'Faltan campos requeridos.' }, { status: 400 });
     }
+
+    if (!eventSlug) {
+      return NextResponse.json({ error: 'Evento requerido.' }, { status: 400 });
+    }
+
+    const event = await db.event.findUnique({
+      where: { slug: eventSlug },
+      select: { id: true, status: true },
+    });
+
+    if (!event) {
+      return NextResponse.json({ error: 'Evento no encontrado.' }, { status: 404 });
+    }
+
+    if (event.status !== 'ON_SALE') {
+      return NextResponse.json({ error: 'La venta para este evento no está abierta.' }, { status: 403 });
+    }
+
+    const eventId = event.id;
 
     const quantity = parseInt(quantityStr, 10);
     if (isNaN(quantity) || quantity <= 0) {
@@ -40,18 +60,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Tipo de archivo no permitido. Solo se aceptan imágenes (JPG, PNG, WEBP) o PDFs.' }, { status: 400 });
     }
 
-    // Dynamic promoter creation or association
+    // Dynamic promoter creation or association (scoped per event:
+    // same referral_code can exist in different events)
     let promoterId: string | null = null;
     if (referralCode && referralCode.trim() !== '') {
       const code = referralCode.trim().toUpperCase();
       let promoter = await db.promoter.findUnique({
-        where: { referral_code: code },
+        where: { event_id_referral_code: { event_id: eventId, referral_code: code } },
       });
 
       // If promoter does not exist, create dynamically on the fly
       if (!promoter) {
         promoter = await db.promoter.create({
           data: {
+            event_id: eventId,
             name: code, // Set name equal to code for dynamic identification
             referral_code: code,
           },
@@ -70,6 +92,7 @@ export async function POST(req: Request) {
     // Create Purchase
     const purchase = await db.purchase.create({
       data: {
+        event_id: eventId,
         buyer_email: email,
         quantity,
         receipt_url: receiptUrl,

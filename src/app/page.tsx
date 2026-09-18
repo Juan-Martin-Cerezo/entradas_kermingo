@@ -207,6 +207,7 @@ export default function CheckoutPage() {
       formData.append('receipt', receipt);
       formData.append('attendeeNames', JSON.stringify(names.map((n) => n.trim())));
       formData.append('dietaryPreferences', dietaryPreferences.trim());
+      formData.append('eventSlug', DEFAULT_EVENT_SLUG);
 
       const res = await fetch('/api/checkout', {
         method: 'POST',
