@@ -2,6 +2,16 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { MAX_FILE_SIZE, ALLOWED_FILE_TYPES } from '@/lib/constants';
 import { uploadReceipt } from '@/lib/storage';
+import { checkMemoryRateLimit } from '@/lib/rate-limit';
+
+function clientIp(req: Request): string {
+  const forwarded = req.headers.get('x-forwarded-for');
+  if (forwarded) {
+    const first = forwarded.split(',')[0]?.trim();
+    if (first) return first;
+  }
+  return req.headers.get('x-real-ip')?.trim() || 'unknown';
+}
 
 export async function POST(req: Request) {
   try {
@@ -24,7 +34,7 @@ export async function POST(req: Request) {
 
     const event = await db.event.findUnique({
       where: { slug: eventSlug },
-      select: { id: true, status: true },
+      select: { id: true, status: true, config: { select: { max_tickets: true } } },
     });
 
     if (!event) {
@@ -40,6 +50,28 @@ export async function POST(req: Request) {
     const quantity = parseInt(quantityStr, 10);
     if (isNaN(quantity) || quantity <= 0) {
       return NextResponse.json({ error: 'Cantidad inválida.' }, { status: 400 });
+    }
+
+    if (checkMemoryRateLimit(eventId, clientIp(req))) {
+      return NextResponse.json(
+        { error: 'Demasiadas compras en la última hora. Intentá de nuevo más tarde.' },
+        { status: 429 }
+      );
+    }
+
+    const maxTickets = event.config?.max_tickets ?? null;
+    if (maxTickets !== null) {
+      const sold = await db.purchase.aggregate({
+        where: { event_id: eventId, payment_status: { not: 'REJECTED' } },
+        _sum: { quantity: true },
+      });
+      const soldQty = sold._sum.quantity ?? 0;
+      if (soldQty + quantity > maxTickets) {
+        return NextResponse.json(
+          { error: 'El cupo del evento está completo. La venta pública está cerrada.' },
+          { status: 403 }
+        );
+      }
     }
 
     let attendeeNames: string[] = [];
