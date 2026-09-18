@@ -41,6 +41,7 @@ export async function GET(req: Request) {
 
     const data = tickets.map((t) => ({
       id: t.id,
+      eventId: t.event_id,
       holderName: t.holder_name,
       entryStatus: t.entry_status,
       entryDate: t.entry_date,

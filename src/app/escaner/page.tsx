@@ -3,6 +3,13 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { DEFAULT_EVENT_SLUG } from '@/lib/constants';
+import {
+  scannerStorageKeys,
+  migrateLegacyStorage,
+  isTicketFromAnotherEvent,
+  stampOfflineDb,
+} from '@/lib/scanner-storage';
 
 // Dynamically import QrScanner component with SSR disabled
 const QrScanner = dynamic(() => import('@/components/QrScanner'), { ssr: false });
@@ -24,10 +31,30 @@ export default function EscanerPage() {
   const [forceOffline, setForceOffline] = useState(false);
   const [pendingSync, setPendingSync] = useState<string[]>([]);
   const [syncing, setSyncing] = useState(false);
+  const [eventSlug] = useState(DEFAULT_EVENT_SLUG);
+  const [eventId, setEventId] = useState<string | null>(null);
+  const [eventLoadError, setEventLoadError] = useState<string | null>(null);
 
-  // Load configuration from localStorage
+  const keys = scannerStorageKeys(eventSlug);
+
+  // Resolve event id from slug + migrate legacy storage keys
   useEffect(() => {
-    const savedDb = localStorage.getItem('kermingo_offline_db');
+    migrateLegacyStorage(
+      (k) => localStorage.getItem(k),
+      (k, v) => localStorage.setItem(k, v),
+      (k) => localStorage.removeItem(k),
+      eventSlug
+    );
+
+    fetch(`/api/event?slug=${encodeURIComponent(eventSlug)}`)
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('Evento no encontrado'))))
+      .then((data) => setEventId(data.id))
+      .catch((err) => setEventLoadError(err.message || 'No se pudo cargar el evento.'));
+  }, [eventSlug, keys.offlineDb, keys.pendingSync]);
+
+  // Load configuration from localStorage (scoped per event slug)
+  useEffect(() => {
+    const savedDb = localStorage.getItem(keys.offlineDb);
     if (savedDb) {
       try {
         setOfflineDb(JSON.parse(savedDb));
@@ -36,7 +63,7 @@ export default function EscanerPage() {
       }
     }
 
-    const savedPending = localStorage.getItem('kermingo_pending_sync');
+    const savedPending = localStorage.getItem(keys.pendingSync);
     if (savedPending) {
       try {
         setPendingSync(JSON.parse(savedPending));
@@ -44,18 +71,23 @@ export default function EscanerPage() {
         console.error('Failed to parse pending syncs', err);
       }
     }
-  }, []);
+  }, [keys.offlineDb, keys.pendingSync]);
 
   const downloadOfflineDb = async () => {
+    if (!eventId) {
+      alert('Error: evento no cargado todavía. Recargá la página.');
+      return;
+    }
     try {
-      const res = await fetch('/api/admin/asistentes');
+      const res = await fetch(`/api/admin/asistentes?eventId=${encodeURIComponent(eventId)}`);
       if (!res.ok) {
         throw new Error('No autorizado. Por favor ingresá al panel admin primero.');
       }
       const data = await res.json();
-      setOfflineDb(data);
-      localStorage.setItem('kermingo_offline_db', JSON.stringify(data));
-      alert(`¡Éxito! Se descargaron ${data.length} entradas autorizadas para validación offline.`);
+      const stamped = stampOfflineDb(data, eventId);
+      setOfflineDb(stamped);
+      localStorage.setItem(keys.offlineDb, JSON.stringify(stamped));
+      alert(`¡Éxito! Se descargaron ${stamped.length} entradas autorizadas para validación offline.`);
     } catch (err: any) {
       alert('Error: ' + (err.message || 'No se pudo descargar la planilla.'));
     }
@@ -75,6 +107,10 @@ export default function EscanerPage() {
 
     const ticket = offlineDb[ticketIndex];
 
+    if (eventId && isTicketFromAnotherEvent(ticket, eventId)) {
+      return { success: false, error: 'TICKET NOT FOUND' };
+    }
+
     if (ticket.entryStatus) {
       return {
         success: false,
@@ -90,12 +126,12 @@ export default function EscanerPage() {
       entryDate: new Date().toISOString(),
     };
     setOfflineDb(updatedDb);
-    localStorage.setItem('kermingo_offline_db', JSON.stringify(updatedDb));
+    localStorage.setItem(keys.offlineDb, JSON.stringify(updatedDb));
 
     // Queue for sync
     const updatedPending = [...pendingSync, cleanId];
     setPendingSync(updatedPending);
-    localStorage.setItem('kermingo_pending_sync', JSON.stringify(updatedPending));
+    localStorage.setItem(keys.pendingSync, JSON.stringify(updatedPending));
 
     return {
       success: true,
@@ -119,7 +155,7 @@ export default function EscanerPage() {
         const res = await fetch('/api/admin/asistentes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ticketId, action: 'CHECKIN' }),
+          body: JSON.stringify({ ticketId, action: 'CHECKIN', eventId }),
         });
 
         if (res.ok) {
@@ -134,7 +170,7 @@ export default function EscanerPage() {
       // Remove successful syncs from queue
       const remainingPending = pendingSync.filter((id) => !successfulSyncs.includes(id));
       setPendingSync(remainingPending);
-      localStorage.setItem('kermingo_pending_sync', JSON.stringify(remainingPending));
+      localStorage.setItem(keys.pendingSync, JSON.stringify(remainingPending));
 
       if (remainingPending.length === 0) {
         alert('¡Sincronización completada! Todos los registros offline fueron subidos al servidor.');
@@ -243,7 +279,13 @@ export default function EscanerPage() {
               onScanResult={handleScanResult}
               forceOffline={forceOffline}
               onOfflineScan={onOfflineScan}
+              eventId={eventId ?? undefined}
             />
+            {eventLoadError && (
+              <p className="mt-4 text-xs font-bold text-red-500 text-center max-w-xs">
+                ⚠ {eventLoadError}
+              </p>
+            )}
           </div>
         ) : (
           <div className="w-full max-w-md animate-fade-in">

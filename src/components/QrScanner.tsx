@@ -7,9 +7,10 @@ interface QrScannerProps {
   onScanResult: (result: { success: boolean; data?: any; error?: string }) => void;
   forceOffline?: boolean;
   onOfflineScan?: (ticketId: string) => { success: boolean; data?: any; error?: string };
+  eventId?: string;
 }
 
-export default function QrScanner({ onScanResult, forceOffline = false, onOfflineScan }: QrScannerProps) {
+export default function QrScanner({ onScanResult, forceOffline = false, onOfflineScan, eventId }: QrScannerProps) {
   const scannerId = 'kermingo-qr-reader-element';
   const qrScannerRef = useRef<Html5Qrcode | null>(null);
   const [cameraPermission, setCameraPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
@@ -28,6 +29,12 @@ export default function QrScanner({ onScanResult, forceOffline = false, onOfflin
   useEffect(() => {
     onOfflineScanRef.current = onOfflineScan;
   }, [onOfflineScan]);
+
+  const eventIdRef = useRef(eventId);
+
+  useEffect(() => {
+    eventIdRef.current = eventId;
+  }, [eventId]);
 
   useEffect(() => {
     onScanResultRef.current = onScanResult;
@@ -122,7 +129,7 @@ export default function QrScanner({ onScanResult, forceOffline = false, onOfflin
       const res = await fetch('/api/tickets/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticketId }),
+        body: JSON.stringify({ ticketId, eventId: eventIdRef.current }),
       });
 
       let data: any = null;
