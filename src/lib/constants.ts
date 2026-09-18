@@ -12,5 +12,7 @@ export const RESERVED_SLUGS = new Set([
   'escaner',
   'invitacion',
   'panel',
+  'registro',
+  'verificar',
 ]);
 

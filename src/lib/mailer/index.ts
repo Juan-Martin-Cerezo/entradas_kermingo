@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 import { db } from '../db';
-import { buildRejectionHtml, buildTicketsHtml, buildInviteHtml, type EventBranding, type TicketInfo } from './templates';
+import { buildRejectionHtml, buildTicketsHtml, buildInviteHtml, buildVerificationHtml, type EventBranding, type TicketInfo } from './templates';
 
 export type { EventBranding, TicketInfo };
 
@@ -111,6 +111,23 @@ export async function sendInviteEmail(
     from: PLATFORM_FROM,
     to: ownerEmail,
     subject: `Invitación para administrar ${eventName} en EventHub`,
+    html: htmlContent,
+  };
+
+  return transporter.sendMail(mailOptions);
+}
+
+export async function sendVerificationEmail(
+  ownerEmail: string,
+  eventName: string,
+  verifyUrl: string
+) {
+  const htmlContent = buildVerificationHtml(eventName, verifyUrl);
+
+  const mailOptions = {
+    from: PLATFORM_FROM,
+    to: ownerEmail,
+    subject: `Verificá tu cuenta de EventHub — ${eventName}`,
     html: htmlContent,
   };
 
