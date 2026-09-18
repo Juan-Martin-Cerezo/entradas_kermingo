@@ -6,19 +6,21 @@ import { defineConfig } from "prisma/config";
 const dbUrl = process.env["DATABASE_URL"] || "";
 const directUrl = process.env["DIRECT_URL"] || "";
 
-// --- Guard 1: allowlist de proyectos Supabase (antes: substring hardcodeado de Kermingo) ---
-const allowedRefs = (process.env["ALLOWED_DB_PROJECT_REFS"] || "wodzuelvlqontlthdlig")
+// --- Guard 1: allowlist de proyectos Supabase / PostgreSQL ---
+const allowedRefs = (process.env["ALLOWED_DB_PROJECT_REFS"] || "")
   .split(",")
   .map((r) => r.trim())
   .filter(Boolean);
-const targets = [dbUrl, directUrl].filter(Boolean);
-const foreign = targets.find((url) => !allowedRefs.some((ref) => url.includes(ref)));
-if (foreign) {
-  console.error(
-    `❌ ERROR: la URL de base de datos no pertenece a un proyecto permitido (${allowedRefs.join(", ")}).\n` +
-      `   Para usar otra DB (staging/tests) exportá ALLOWED_DB_PROJECT_REFS="ref1,ref2".`
-  );
-  process.exit(1);
+if (allowedRefs.length > 0) {
+  const targets = [dbUrl, directUrl].filter(Boolean);
+  const foreign = targets.find((url) => !allowedRefs.some((ref) => url.includes(ref)));
+  if (foreign) {
+    console.error(
+      `❌ ERROR: la URL de base de datos no pertenece a un proyecto permitido (${allowedRefs.join(", ")}).\n` +
+        `   Para usar otra DB (staging/tests) exportá ALLOWED_DB_PROJECT_REFS="ref1,ref2".`
+    );
+    process.exit(1);
+  }
 }
 
 // --- Guard 2: DDL explícito. Cualquier comando que cambie el schema requiere ALLOW_DB_PUSH=1 ---

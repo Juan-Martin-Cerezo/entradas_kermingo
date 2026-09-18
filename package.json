@@ -1,5 +1,5 @@
 {
-  "name": "entradas_kermingo",
+  "name": "eventhub",
   "version": "0.1.0",
   "private": true,
   "scripts": {
