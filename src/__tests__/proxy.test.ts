@@ -138,21 +138,22 @@ describe('Proxy / Scoped Session Middleware', () => {
     });
   });
 
-  describe('Legacy Route Protection', () => {
-    it('should redirect unauthenticated requests from /admin/asistentes to /admin', async () => {
+  describe('Legacy Route Redirects (F3: 308 → /kermingo-2026/...)', () => {
+    it('should redirect unauthenticated requests from /admin/asistentes to /kermingo-2026/admin/asistentes', async () => {
       const req = createRequest('https://eventhub.app/admin/asistentes');
       const res = await proxy(req);
 
-      expect(res.status).toBe(307);
-      expect(res.headers.get('location')).toBe('https://eventhub.app/admin');
+      expect(res.status).toBe(308);
+      expect(res.headers.get('location')).toBe('https://eventhub.app/kermingo-2026/admin/asistentes');
     });
 
-    it('should allow /admin/asistentes when signed session is valid', async () => {
+    it('should redirect /admin/asistentes to the scoped route even with a valid session', async () => {
       const token = await signSession({ role: 'superadmin' });
       const req = createRequest('https://eventhub.app/admin/asistentes', token);
       const res = await proxy(req);
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(308);
+      expect(res.headers.get('location')).toBe('https://eventhub.app/kermingo-2026/admin/asistentes');
     });
   });
 });

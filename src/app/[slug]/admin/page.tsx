@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 
 interface Promoter {
@@ -33,7 +33,8 @@ interface Stats {
   currency: string;
 }
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
   const [password, setPassword] = useState('');
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
@@ -43,10 +44,22 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [selectedReceipt, setSelectedReceipt] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
+  const [eventId, setEventId] = useState<string | null>(null);
+  const [eventName, setEventName] = useState<string>('');
 
-  const fetchStats = async () => {
+  useEffect(() => {
+    fetch(`/api/event?slug=${encodeURIComponent(slug)}`)
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('Evento no encontrado'))))
+      .then((data) => {
+        setEventId(data.id);
+        setEventName(data.name);
+      })
+      .catch((err: Error) => setError(err.message));
+  }, [slug]);
+
+  const fetchStats = async (eid: string) => {
     try {
-      const res = await fetch('/api/admin/stats');
+      const res = await fetch(`/api/admin/stats?eventId=${encodeURIComponent(eid)}`);
       if (res.ok) {
         const data = await res.json();
         setStats(data);
@@ -56,18 +69,20 @@ export default function AdminDashboard() {
     }
   };
 
-  const verifyAndFetch = async () => {
+  const verifyAndFetch = async (eid?: string) => {
+    const id = eid ?? eventId;
+    if (!id) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/admin/purchases');
+      const res = await fetch(`/api/admin/purchases?eventId=${encodeURIComponent(id)}`);
       if (!res.ok) {
         throw new Error('No autorizado.');
       }
       const data = await res.json();
       setPurchases(data);
       setIsAuthorized(true);
-      await fetchStats();
+      await fetchStats(id);
     } catch (err: any) {
       setIsAuthorized(false);
     } finally {
@@ -76,8 +91,9 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    verifyAndFetch();
-  }, []);
+    if (eventId) verifyAndFetch(eventId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,7 +103,7 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password, slug }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -113,7 +129,7 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ purchaseId, action }),
+        body: JSON.stringify({ purchaseId, action, eventId }),
       });
 
       let data: any = null;
@@ -156,7 +172,7 @@ export default function AdminDashboard() {
           )
         );
       }
-      await fetchStats();
+      await fetchStats(eventId as string);
     } catch (err: any) {
       setError(err.message || 'Error al procesar la acción.');
       // If action failed but update occurred (e.g. resend failed) update local status
@@ -176,7 +192,7 @@ export default function AdminDashboard() {
 
   const viewReceipt = async (purchaseId: string) => {
     try {
-      const res = await fetch(`/api/admin/purchases/receipt?id=${purchaseId}`);
+      const res = await fetch(`/api/admin/purchases/receipt?id=${purchaseId}&eventId=${encodeURIComponent(eventId as string)}`);
       if (!res.ok) {
         throw new Error('No se pudo cargar el comprobante.');
       }
@@ -240,17 +256,17 @@ export default function AdminDashboard() {
       {/* Navigation */}
       <nav className="border-b-4 border-[#D4AF37] bg-[#74ACDF] px-4 py-4 text-white shadow-md">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
-          <Link href="/admin" className="text-lg sm:text-xl font-black tracking-wider whitespace-nowrap">
-            🏆 KERMINGO 2026 ADMIN
+          <Link href={`/${slug}/admin`} className="text-lg sm:text-xl font-black tracking-wider whitespace-nowrap">
+            🏆 {eventName || slug} ADMIN
           </Link>
           <div className="flex flex-wrap items-center gap-2">
-            <Link href="/admin/asistentes" className="rounded-lg bg-white/20 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-white/30 transition whitespace-nowrap">
+            <Link href={`/${slug}/admin/asistentes`} className="rounded-lg bg-white/20 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-white/30 transition whitespace-nowrap">
               📋 Planilla
             </Link>
-            <Link href="/admin/referidos" className="rounded-lg bg-white/20 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-white/30 transition whitespace-nowrap">
+            <Link href={`/${slug}/admin/referidos`} className="rounded-lg bg-white/20 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-white/30 transition whitespace-nowrap">
               📊 Referidos
             </Link>
-            <Link href="/escaner" className="rounded-lg bg-white/20 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-white/30 transition whitespace-nowrap">
+            <Link href={`/${slug}/escaner`} className="rounded-lg bg-white/20 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-white/30 transition whitespace-nowrap">
               📷 Escanear QR
             </Link>
             <button onClick={handleLogout} className="rounded-lg bg-red-600 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-red-700 transition whitespace-nowrap cursor-pointer">

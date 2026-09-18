@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { DEFAULT_EVENT_SLUG } from '@/lib/constants';
 import {
   scannerStorageKeys,
   migrateLegacyStorage,
@@ -25,13 +24,13 @@ interface ScanResult {
   error?: string;
 }
 
-export default function EscanerPage() {
+export default function EscanerPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug: eventSlug } = use(params);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [offlineDb, setOfflineDb] = useState<any[] | null>(null);
   const [forceOffline, setForceOffline] = useState(false);
   const [pendingSync, setPendingSync] = useState<string[]>([]);
   const [syncing, setSyncing] = useState(false);
-  const [eventSlug] = useState(DEFAULT_EVENT_SLUG);
   const [eventId, setEventId] = useState<string | null>(null);
   const [eventLoadError, setEventLoadError] = useState<string | null>(null);
 
@@ -197,17 +196,17 @@ export default function EscanerPage() {
       {/* Admin Navbar */}
       <nav className="border-b-4 border-[#D4AF37] bg-[#74ACDF] px-4 py-4 text-white shadow-md">
         <div className="mx-auto flex max-w-xl flex-wrap items-center justify-between gap-3">
-          <Link href="/admin" className="text-base sm:text-lg font-black tracking-wider flex items-center gap-1 whitespace-nowrap">
+          <Link href={`/${eventSlug}/admin`} className="text-base sm:text-lg font-black tracking-wider flex items-center gap-1 whitespace-nowrap">
             <span>🏆</span> KERMINGO 2026
           </Link>
           <div className="flex flex-wrap gap-1.5">
-            <Link href="/admin" className="text-xs sm:text-sm font-bold bg-white/20 px-2.5 py-1.5 rounded-lg hover:bg-white/30 transition whitespace-nowrap">
+            <Link href={`/${eventSlug}/admin`} className="text-xs sm:text-sm font-bold bg-white/20 px-2.5 py-1.5 rounded-lg hover:bg-white/30 transition whitespace-nowrap">
               Panel
             </Link>
-            <Link href="/admin/asistentes" className="text-xs sm:text-sm font-bold bg-white/20 px-2.5 py-1.5 rounded-lg hover:bg-white/30 transition whitespace-nowrap">
+            <Link href={`/${eventSlug}/admin/asistentes`} className="text-xs sm:text-sm font-bold bg-white/20 px-2.5 py-1.5 rounded-lg hover:bg-white/30 transition whitespace-nowrap">
               Planilla
             </Link>
-            <Link href="/" className="text-xs sm:text-sm font-bold bg-white/20 px-2.5 py-1.5 rounded-lg hover:bg-white/30 transition whitespace-nowrap">
+            <Link href={`/${eventSlug}`} className="text-xs sm:text-sm font-bold bg-white/20 px-2.5 py-1.5 rounded-lg hover:bg-white/30 transition whitespace-nowrap">
               Comprar
             </Link>
           </div>

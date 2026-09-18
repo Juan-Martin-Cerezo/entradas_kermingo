@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 
 interface ReferidoData {
@@ -11,18 +11,29 @@ interface ReferidoData {
   commissionCents: number;
 }
 
-export default function ReferidosPage() {
+export default function ReferidosPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
   const [password, setPassword] = useState('');
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [report, setReport] = useState<ReferidoData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [eventId, setEventId] = useState<string | null>(null);
 
-  const verifyAndFetch = async () => {
+  useEffect(() => {
+    fetch(`/api/event?slug=${encodeURIComponent(slug)}`)
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('Evento no encontrado'))))
+      .then((data) => setEventId(data.id))
+      .catch((err: Error) => setError(err.message));
+  }, [slug]);
+
+  const verifyAndFetch = async (eid?: string) => {
+    const id = eid ?? eventId;
+    if (!id) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/admin/referidos');
+      const res = await fetch(`/api/admin/referidos?eventId=${encodeURIComponent(id)}`);
       if (!res.ok) {
         throw new Error('No autorizado.');
       }
@@ -37,8 +48,9 @@ export default function ReferidosPage() {
   };
 
   useEffect(() => {
-    verifyAndFetch();
-  }, []);
+    if (eventId) verifyAndFetch(eventId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +60,7 @@ export default function ReferidosPage() {
       const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password, slug }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -116,17 +128,17 @@ export default function ReferidosPage() {
       {/* Navigation */}
       <nav className="border-b-4 border-[#D4AF37] bg-[#74ACDF] px-4 py-4 text-white shadow-md">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
-          <Link href="/admin" className="text-lg sm:text-xl font-black tracking-wider whitespace-nowrap">
-            🏆 KERMINGO 2026 ADMIN
+          <Link href={`/${slug}/admin`} className="text-lg sm:text-xl font-black tracking-wider whitespace-nowrap">
+            🏆 {slug} ADMIN
           </Link>
           <div className="flex flex-wrap items-center gap-2">
-            <Link href="/admin" className="rounded-lg bg-white/20 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-white/30 transition whitespace-nowrap">
+            <Link href={`/${slug}/admin`} className="rounded-lg bg-white/20 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-white/30 transition whitespace-nowrap">
               ⏳ Aprobaciones
             </Link>
-            <Link href="/admin/asistentes" className="rounded-lg bg-white/20 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-white/30 transition whitespace-nowrap">
+            <Link href={`/${slug}/admin/asistentes`} className="rounded-lg bg-white/20 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-white/30 transition whitespace-nowrap">
               📋 Planilla
             </Link>
-            <Link href="/escaner" className="rounded-lg bg-white/20 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-white/30 transition whitespace-nowrap">
+            <Link href={`/${slug}/escaner`} className="rounded-lg bg-white/20 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-white/30 transition whitespace-nowrap">
               📷 Escanear QR
             </Link>
             <button onClick={handleLogout} className="rounded-lg bg-red-600 px-2.5 py-1.5 text-xs sm:text-sm font-bold hover:bg-red-700 transition whitespace-nowrap cursor-pointer">
@@ -142,7 +154,7 @@ export default function ReferidosPage() {
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
             <span>📊</span> Liquidación de Comisiones por Referidos
           </h1>
-          <Link href="/admin" className="text-sm font-semibold text-[#74ACDF] hover:underline">
+          <Link href={`/${slug}/admin`} className="text-sm font-semibold text-[#74ACDF] hover:underline">
             ← Volver a Aprobaciones
           </Link>
         </div>

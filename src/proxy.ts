@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getSessionFromRequest } from '@/lib/session';
+import { DEFAULT_EVENT_SLUG } from '@/lib/constants';
 
 async function sha256(message: string): Promise<string> {
   const msgBuffer = new TextEncoder().encode(message);
@@ -69,7 +70,15 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // 2. Legacy route protection: /admin/asistentes, /admin/referidos, /escaner
+  // 2. Legacy route redirects: /admin*, /escaner* → /<default-slug>/... (308)
+  const legacyRedirectMatch = pathname.match(/^\/(admin|escaner)(\/.*)?$/);
+  if (legacyRedirectMatch && !pathname.startsWith('/api/')) {
+    const section = legacyRedirectMatch[1];
+    const subpath = legacyRedirectMatch[2] || '';
+    return NextResponse.redirect(new URL(`/${DEFAULT_EVENT_SLUG}/${section}${subpath}`, request.url), 308);
+  }
+
+  // 3. Legacy route protection (kept for direct /api access patterns): /admin/asistentes, /admin/referidos, /escaner
   const isLegacyProtected =
     pathname.startsWith('/admin/asistentes') ||
     pathname.startsWith('/admin/referidos') ||
@@ -105,6 +114,8 @@ export const middleware = proxy;
 
 export const config = {
   matcher: [
+    '/admin/:path*',
+    '/escaner/:path*',
     '/admin/asistentes/:path*',
     '/admin/referidos/:path*',
     '/escaner/:path*',
