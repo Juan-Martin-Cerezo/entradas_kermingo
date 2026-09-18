@@ -33,6 +33,7 @@ export default function EscanerPage({ params }: { params: Promise<{ slug: string
   const [syncing, setSyncing] = useState(false);
   const [eventId, setEventId] = useState<string | null>(null);
   const [eventLoadError, setEventLoadError] = useState<string | null>(null);
+  const [eventName, setEventName] = useState<string | null>(null);
 
   const keys = scannerStorageKeys(eventSlug);
 
@@ -47,7 +48,10 @@ export default function EscanerPage({ params }: { params: Promise<{ slug: string
 
     fetch(`/api/event?slug=${encodeURIComponent(eventSlug)}`)
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error('Evento no encontrado'))))
-      .then((data) => setEventId(data.id))
+      .then((data) => {
+        setEventId(data.id);
+        setEventName(typeof data.name === 'string' ? data.name : null);
+      })
       .catch((err) => setEventLoadError(err.message || 'No se pudo cargar el evento.'));
   }, [eventSlug, keys.offlineDb, keys.pendingSync]);
 
@@ -217,7 +221,7 @@ export default function EscanerPage({ params }: { params: Promise<{ slug: string
       <main className="flex-1 flex flex-col items-center justify-center p-4">
         {scanResult === null ? (
           <div className="w-full max-w-md text-center">
-            <h1 className="text-2xl font-black mb-1 text-[#74ACDF]">SOL DE MAYO</h1>
+            <h1 className="text-2xl font-black mb-1 text-[#74ACDF]">{eventName || eventSlug}</h1>
             <p className="text-sm text-slate-400 mb-6">Control de Acceso / Validación de Entradas</p>
 
             {/* Offline Control Dashboard */}

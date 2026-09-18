@@ -48,11 +48,30 @@ Rutas legacy (`/admin`, `/escaner`) redirigen 308 a `/kermingo-2026/...`.
 
 ## 🖼️ Capturas
 
-> Pendiente: agregar capturas reales desde una instancia corriendo en
-> `docs/screenshots/` (`home.png`, `compra.png`, `panel.png`, `escaner.png`,
-> `admin-evento.png`). Ver `docs/screenshots/README.md` con la guía de captura.
-> Este entorno de desarrollo no tiene acceso a una base de datos, por eso no se
-> incluyen capturas generadas automáticamente.
+Capturas reales de una instancia en producción (generadas con `scripts/` del repo +
+Playwright, ver `docs/screenshots/README.md`).
+
+### Panel de superadmin — crear y gestionar eventos sin tocar código
+
+| Métricas de la plataforma | Crear evento |
+|---|---|
+| ![Panel superadmin](docs/screenshots/02-panel-superadmin.png) | ![Crear evento](docs/screenshots/03-panel-crear-evento.png) |
+
+### Panel del dueño de cada evento
+
+| Ventas y aprobación de comprobantes | Promoters y ranking |
+|---|---|
+| ![Ventas](docs/screenshots/04-evento-admin-ventas.png) | ![Promoters](docs/screenshots/05-evento-admin-referidos.png) |
+
+| Planilla de asistentes | Alta de organizador |
+|---|---|
+| ![Asistentes](docs/screenshots/06-evento-admin-asistentes.png) | ![Registro](docs/screenshots/07-registro.png) |
+
+### Público y escáner (mobile-first)
+
+| Home | Escáner QR (offline-first) | Panel en celular |
+|---|---|---|
+| ![Home](docs/screenshots/01-landing.png) | ![Escáner](docs/screenshots/08-escaner-mobile.png) | ![Panel mobile](docs/screenshots/09-panel-mobile.png) |
 
 - **Home (`/`)**: lista de eventos a la venta, cada uno con su nombre y link a su página de compra.
 - **Compra (`/[slug]`)**: formulario con nombre, email, cantidad, comprobante de pago (comprimido en cliente) y código de referido opcional.
