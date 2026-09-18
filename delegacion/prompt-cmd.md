@@ -27,9 +27,9 @@ Tablero: Notion DB `EventHub Tasks` = `3dfb8e8b-1951-8115-8ec3-cf79edb415c9`. Vi
    y dejá en el comentario el hash del commit y el resultado de los tests.
 3. **Test primero** donde la task lo pida (ej. `src/__tests__/isolation.test.ts` para el aislamiento entre eventos):
    si el test no pasa antes y después, la task no está hecha.
-4. Nunca inventes datos de la DB real: usá tests con mocks (ya hay patrón en `src/__tests__/*.test.ts`) y
-   `npx tsx backup-db.ts` antes de cualquier cosa que toque la DB.
-5. Antes de cada commit: `npm run lint` + `npx vitest run` + `npm run build` verdes.
+4. Nunca inventes datos de la DB real: usá tests con mocks (ya hay patrón en `src/__tests__/*.test.ts`).
+   Acá no hay backup posible: la Pi no tiene credenciales, así que no toques la DB en absoluto.
+5. Antes de cada commit: `npx vitest run` verde (baseline 7 tests) y no aumentar los errores de lint (baseline 48). `npm run build` una sola vez al final del lote de tasks.
 6. Al final: actualizá `~/ia-memoria/proyectos/kermingo.md` (Log: fecha + qué cambió) + push.
 
 ## Restricciones

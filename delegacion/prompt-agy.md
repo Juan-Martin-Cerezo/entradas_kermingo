@@ -27,8 +27,7 @@ Tablero: Notion DB `EventHub Tasks` = `3dfb8e8b-1951-8115-8ec3-cf79edb415c9`
 1. Query de la DB, filtrá `Asignado=PM` y `Status=Sin empezar`. Mové a `En progreso` la primera.
 2. Implementá **F1 schema multi-tenant** y **F2 auth multi-rol** (las tareas marcadas PM).
    Criterios de aceptación en el plan y en el nombre de cada task. Nada de scope creep.
-   Reglas del repo: backup antes de tocar la DB (`npx tsx backup-db.ts`), `npm run lint` + `npx vitest run` +
-   `npm run build` verdes antes de cada commit, commits convencionales, un PR por task.
+   Reglas del repo: commits convencionales, un PR por task, `npx vitest run` verde (baseline 7) y sin sumar errores de lint (baseline 48). NO corras `backup-db.ts` acá: la Pi no tiene credenciales de la DB.
 3. Cuando el contributor (Command Code) mande algo a `Review`: revisá el **diff real** (`git log/diff`), corré los
    tests, compará contra el criterio de aceptación. Mové a `Hecho` o devolvé con comentario concreto.
    Nunca confíes en el self-report del junior.
