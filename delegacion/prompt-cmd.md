@@ -7,6 +7,17 @@ Memoria compartida: `git -C ~/ia-memoria pull --ff-only -q`, leé `orquestacion.
 ## Contexto
 Convertir `entradas_kermingo` (sistema de entradas de UN evento) en **EventHub** (N eventos de N dueños).
 Plan: `.hermes/plans/2026-09-18_eventhub-multievento.md` — leelo entero antes de escribir código.
+
+## Entorno (importante)
+- Corrés **en la Raspberry Pi 5**, repo `~/entradas_kermingo` (clonado; `gh` autenticado; push anda).
+- **Sin credenciales de DB**: prohibido `prisma db push` / `prisma migrate` contra la Supabase de producción.
+  Sólo `npx prisma generate` + tests con mocks. Si necesitás SQL de migración, escribí el archivo
+  `prisma/migrations/<ts>_<nombre>/migration.sql` y NO lo apliques.
+- No corras `npm ci` de nuevo si `node_modules` ya existe (la Pi tiene 8GB de RAM). `npm run lint` (no aumentar los 48 errores preexistentes) + `npx vitest run` (7 tests verdes de baseline)
+  antes de cada commit; `npm run build` una vez al final del lote, no por task.
+- **El PM (Antigravity) está trabajando en el MISMO repo, secuencialmente antes que vos.** Hacé `git pull` y mirá
+  `git log --oneline -10` antes de arrancar: no pises lo que ya hizo, construí encima.
+
 Tablero: Notion DB `EventHub Tasks` = `3dfb8e8b-1951-8115-8ec3-cf79edb415c9`. Via MCP notion.
 
 ## Tu trabajo

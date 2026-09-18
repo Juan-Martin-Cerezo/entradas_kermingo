@@ -10,6 +10,16 @@ Supabase + Vercel. Hay que convertirlo en **EventHub**: misma funcionalidad, N e
 aislamiento real por evento. Plan completo: `.hermes/plans/2026-09-18_eventhub-multievento.md` (leelo entero
 antes de tocar nada — tiene las 5 decisiones de arquitectura y los bloqueantes encontrados en el recon).
 
+## Entorno (importante)
+- Corrés **en la Raspberry Pi 5**, repo en `~/entradas_kermingo` (ya clonado, `gh` autenticado, git push anda).
+- **No hay credenciales de base de datos acá.** NUNCA corras `prisma db push`, `prisma migrate` ni nada que
+  abra la Supabase de producción. Las migraciones se escriben a mano como SQL en `prisma/migrations/<ts>_<nombre>/migration.sql`
+  y quedan **sin aplicar** — las aplica Juan desde la Dell. Sí podés `npx prisma generate` y `npx prisma validate`.
+- Tests con mocks (patrón en `src/__tests__/*.test.ts`). Antes de cada commit: `npm run lint` (baseline actual: **48 errors / 12 warnings** — `npm run lint 2>&1 | tail -1`; exigencia: NO aumentar el conteo, no hace falta llegar a cero), `npx vitest run` (baseline: **7 tests verdes**);
+  `npm run build` si la RAM lo permite (si el build falla por memoria, anotalo en el comentario de la task, no lo
+  escondas).
+
+
 Tablero: Notion DB `EventHub Tasks` = `3dfb8e8b-1951-8115-8ec3-cf79edb415c9`
 (page `EventHub — Entradas Multi-Evento` bajo Second Brain). Via MCP notion.
 
